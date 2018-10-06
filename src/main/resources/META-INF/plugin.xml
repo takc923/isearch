@@ -1,11 +1,10 @@
 <idea-plugin>
     <id>io.github.takc923.isearch</id>
-    <name>Plugin display name here</name>
-    <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+    <name>i-search</name>
+    <vendor email="takc923@gmail.com" url="https://github.com/takc923">takc923</vendor>
 
     <description><![CDATA[
-    Enter short description for your plugin here.<br>
-    <em>most HTML tags may be used</em>
+    i-search plugin
     ]]></description>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
@@ -19,6 +18,6 @@
     </extensions>
 
     <actions>
-        <!-- Add your actions here -->
+        <action id="ISearch" class="ISearchAction" text="i-search" description="i-search" />
     </actions>
 </idea-plugin>

@@ -1,7 +1,19 @@
+buildscript {
+    ext.kotlin_version = '1.2.71'
+
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
 plugins {
     id 'java'
     id 'org.jetbrains.intellij' version '0.3.11'
 }
+apply plugin: 'kotlin'
 
 group 'io.github.takc923'
 version '0.1-SNAPSHOT'
