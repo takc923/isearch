@@ -16,7 +16,7 @@ plugins {
 apply plugin: 'kotlin'
 
 group 'io.github.takc923'
-version '0.1-SNAPSHOT'
+version '0.1'
 
 sourceCompatibility = 1.8
 
@@ -30,9 +30,12 @@ dependencies {
 
 intellij {
     version '2018.2.4'
+    pluginName 'isearch'
+    updateSinceUntilBuild false
+    publish.channel 'alpha'
 }
-patchPluginXml {
-    changeNotes """
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>"""
+
+publishPlugin {
+    username intellijPublishUsername
+    password intellijPublishPassword
 }
