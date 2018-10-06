@@ -3,7 +3,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.project.DumbAware
 
-class ISearchAction : AnAction(), DumbAware {
+class ISearchBackwardAction : AnAction(), DumbAware {
     init {
         isEnabledInModalContext = true
     }

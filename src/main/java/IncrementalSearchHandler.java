@@ -378,7 +378,7 @@ public class IncrementalSearchHandler {
           hint.pack();
           hint.updateLocation(bounds.x, bounds.y);
         }
-        updatePosition(editor, hintData, false, false);
+        updatePosition(editor, hintData, false, true);
       }
     }
   }
