@@ -18,6 +18,8 @@
     </extensions>
 
     <actions>
-        <action id="ISearchBackward" class="ISearchBackwardAction" text="isearch-backward" description="isearch-backward" />
+        <action id="ISearchBackward" class="ISearchBackwardAction" text="isearch-backward" description="isearch-backward">
+            <keyboard-shortcut first-keystroke="meta R" keymap="$default"/>
+        </action>
     </actions>
 </idea-plugin>
