@@ -31,7 +31,6 @@ dependencies {
 intellij {
     version '2018.2.4'
     pluginName 'isearch'
-    updateSinceUntilBuild false
     publish.channel 'alpha'
 }
 
