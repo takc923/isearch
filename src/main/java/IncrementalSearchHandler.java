@@ -72,7 +72,7 @@ public class IncrementalSearchHandler {
     RangeHighlighter segmentHighlighter;
     boolean ignoreCaretMove = false;
 
-    public PerHintSearchData(Project project, JLabel label) {
+    private PerHintSearchData(Project project, JLabel label) {
       this.project = project;
       this.label = label;
     }
@@ -81,11 +81,6 @@ public class IncrementalSearchHandler {
   private static class PerEditorSearchData {
     LightweightHint hint;
     String lastSearch;
-  }
-
-  public static boolean isHintVisible(final Editor editor) {
-    final PerEditorSearchData data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY);
-    return data != null && data.hint != null && data.hint.isVisible();
   }
 
   public void invoke(Project project, final Editor editor) {
@@ -129,7 +124,7 @@ public class IncrementalSearchHandler {
     JPanel panel = new MyPanel(label1);
     panel.add(label1, BorderLayout.WEST);
     panel.add(label2, BorderLayout.CENTER);
-    panel.setBorder(BorderFactory.createLineBorder(Color.black));
+    panel.setBorder(BorderFactory.createLineBorder(JBColor.black));
 
     final DocumentListener[] documentListener = new DocumentListener[1];
     final CaretListener[] caretListener = new CaretListener[1];
@@ -327,7 +322,7 @@ public class IncrementalSearchHandler {
   }
 
   private static class MyLabel extends JLabel {
-    public MyLabel(String text) {
+    private MyLabel(String text) {
       super(text);
       this.setBackground(HintUtil.getInformationColor());
       this.setForeground(JBColor.foreground());
@@ -338,7 +333,7 @@ public class IncrementalSearchHandler {
   private static class MyPanel extends JPanel{
     private final Component myLeft;
 
-    public MyPanel(Component left) {
+    private MyPanel(Component left) {
       super(new BorderLayout());
       myLeft = left;
     }
@@ -350,13 +345,13 @@ public class IncrementalSearchHandler {
       return new Dimension(size.width + lSize.width, size.height);
     }
 
-    public Dimension getTruePreferredSize() {
+    private Dimension getTruePreferredSize() {
       return super.getPreferredSize();
     }
   }
 
   public static class MyTypedHandler extends TypedActionHandlerBase {
-    public MyTypedHandler(@Nullable TypedActionHandler originalHandler) {
+    private MyTypedHandler(@Nullable TypedActionHandler originalHandler) {
       super(originalHandler);
     }
 
@@ -386,7 +381,7 @@ public class IncrementalSearchHandler {
   public static class BackSpaceHandler extends EditorActionHandler{
     private final EditorActionHandler myOriginalHandler;
 
-    public BackSpaceHandler(EditorActionHandler originalAction) {
+    private BackSpaceHandler(EditorActionHandler originalAction) {
       myOriginalHandler = originalAction;
     }
 
@@ -412,7 +407,7 @@ public class IncrementalSearchHandler {
   public static class UpHandler extends EditorActionHandler {
     private final EditorActionHandler myOriginalHandler;
 
-    public UpHandler(EditorActionHandler originalHandler) {
+    private UpHandler(EditorActionHandler originalHandler) {
       myOriginalHandler = originalHandler;
     }
 
@@ -445,7 +440,7 @@ public class IncrementalSearchHandler {
   public static class DownHandler extends EditorActionHandler {
     private final EditorActionHandler myOriginalHandler;
 
-    public DownHandler(EditorActionHandler originalHandler) {
+    private DownHandler(EditorActionHandler originalHandler) {
       myOriginalHandler = originalHandler;
     }
 
