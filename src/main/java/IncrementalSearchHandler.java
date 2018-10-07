@@ -97,8 +97,6 @@ public class IncrementalSearchHandler {
       ourActionsRegistered = true;
     }
 
-    FeatureUsageTracker.getInstance().triggerFeatureUsed("editing.incremental.search");
-
     String selection = editor.getSelectionModel().getSelectedText();
     JLabel label2 = new MyLabel(selection == null ? "" : selection);
 
