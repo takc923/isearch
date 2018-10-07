@@ -20,7 +20,6 @@ import com.intellij.codeInsight.hint.HintUtil;
 import com.intellij.codeInsight.template.impl.editorActions.TypedActionHandlerBase;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.IdeActions;
-import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
@@ -59,7 +58,6 @@ import java.util.regex.PatternSyntaxException;
 public class IncrementalSearchHandler {
   private static final Key<PerEditorSearchData> SEARCH_DATA_IN_EDITOR_VIEW_KEY = Key.create("IncrementalSearchHandler.SEARCH_DATA_IN_EDITOR_VIEW_KEY");
   private static final Key<PerHintSearchData> SEARCH_DATA_IN_HINT_KEY = Key.create("IncrementalSearchHandler.SEARCH_DATA_IN_HINT_KEY");
-  private static final Logger LOG = Logger.getInstance("#com.intellij.codeInsight.navigation.IncrementalSearchHandler");
 
   private static boolean ourActionsRegistered = false;
 
@@ -131,7 +129,6 @@ public class IncrementalSearchHandler {
       @Override
       public void hide() {
         PerHintSearchData data = getUserData(SEARCH_DATA_IN_HINT_KEY);
-        LOG.assertTrue(data != null);
         String prefix = data.label.getText();
 
         super.hide();
