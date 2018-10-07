@@ -251,7 +251,7 @@ class IncrementalSearchHandler {
             } else {
                 val hint = data.hint
                 val hintData = hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
-                val prefix = hintData!!.label.text ?: return
+                hintData!!.label.text ?: return
                 hintData.searchStart = editor.caretModel.offset
                 if (hintData.searchStart == 0) return
                 hintData.searchStart--
@@ -275,7 +275,7 @@ class IncrementalSearchHandler {
             } else {
                 val hint = data.hint
                 val hintData = hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
-                val prefix = hintData!!.label.text ?: return
+                hintData!!.label.text ?: return
                 hintData.searchStart = editor.caretModel.offset
                 if (hintData.searchStart == editor.document.textLength) return
                 hintData.searchStart++
