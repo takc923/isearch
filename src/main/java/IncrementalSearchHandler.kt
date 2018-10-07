@@ -175,7 +175,7 @@ class IncrementalSearchHandler {
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
 
-        if (hintData.label.text.length > 0) {
+        if (hintData.label.text.isNotEmpty()) {
             updatePosition(editor, hintData, true, false)
         }
     }
@@ -204,7 +204,7 @@ class IncrementalSearchHandler {
 
         override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            if (data == null || data.hint == null) {
+            if (data?.hint == null) {
                 myOriginalHandler?.execute(editor, charTyped, dataContext)
             } else {
                 val hint = data.hint
@@ -227,13 +227,13 @@ class IncrementalSearchHandler {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            if (data == null || data.hint == null) {
+            if (data?.hint == null) {
                 myOriginalHandler.execute(editor, caret, dataContext)
             } else {
                 val hint = data.hint
                 val hintData = hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
                 var text = hintData!!.label.text
-                if (text.length > 0) {
+                if (text.isNotEmpty()) {
                     text = text.substring(0, text.length - 1)
                 }
                 hintData.label.text = text
@@ -246,7 +246,7 @@ class IncrementalSearchHandler {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            if (data == null || data.hint == null) {
+            if (data?.hint == null) {
                 myOriginalHandler.execute(editor, caret, dataContext)
             } else {
                 val hint = data.hint
@@ -262,7 +262,7 @@ class IncrementalSearchHandler {
 
         override fun isEnabled(editor: Editor, dataContext: DataContext): Boolean {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data != null && data.hint != null || myOriginalHandler.isEnabled(editor, dataContext)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, dataContext)
         }
     }
 
@@ -270,7 +270,7 @@ class IncrementalSearchHandler {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            if (data == null || data.hint == null) {
+            if (data?.hint == null) {
                 myOriginalHandler.execute(editor, caret, dataContext)
             } else {
                 val hint = data.hint
@@ -286,7 +286,7 @@ class IncrementalSearchHandler {
 
         override fun isEnabled(editor: Editor, dataContext: DataContext): Boolean {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data != null && data.hint != null || myOriginalHandler.isEnabled(editor, dataContext)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, dataContext)
         }
     }
 
