@@ -4,10 +4,12 @@
     <vendor email="takc923@gmail.com" url="https://github.com/takc923">takc923</vendor>
 
     <description><![CDATA[
-    isearch plugin
+    <p>isearch plugin.</p>
+    <p>This plugin adds isearch-backward action which does incremental search backward.</p>
+    <p>It is invoked by Control-R by default</p>
     ]]></description>
 
-    <change-notes>Initial release of the plugin.</change-notes>
+    <change-notes>Fix IndexOutOfBoundsException bug.</change-notes>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
