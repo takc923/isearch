@@ -31,9 +31,9 @@ dependencies {
 intellij {
     version '2018.2.4'
     pluginName 'isearch'
-    publish.channel 'alpha'
 }
 
+apply from: "gradle.properties"
 publishPlugin {
     username intellijPublishUsername
     password intellijPublishPassword
