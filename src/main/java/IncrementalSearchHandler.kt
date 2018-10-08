@@ -89,8 +89,8 @@ class IncrementalSearchHandler {
         if (data == null) {
             data = PerEditorSearchData()
         } else if (data.hint != null) {
-            val hint = data.hint
-            searchBackwardNext(editor, hint!!)
+            val hint = data.hint ?: return
+            searchBackwardNext(editor, hint)
             return
         }
 
@@ -108,14 +108,14 @@ class IncrementalSearchHandler {
 
         val hint = object : LightweightHint(panel) {
             override fun hide() {
-                val data = getUserData(SEARCH_DATA_IN_HINT_KEY)
-                val prefix = data!!.label.text
+                val data = getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+                val prefix = data.label.text
 
                 super.hide()
 
                 data.segmentHighlighter?.dispose()
-                val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-                editorData!!.hint = null
+                val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
+                editorData.hint = null
                 editorData.lastSearch = prefix
 
                 val dListener = documentListener[0]
@@ -197,9 +197,9 @@ class IncrementalSearchHandler {
             if (data?.hint == null) {
                 myOriginalHandler?.execute(editor, charTyped, dataContext)
             } else {
-                val hint = data.hint
-                val hintData = hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
-                var text = hintData!!.label.text
+                val hint = data.hint ?: return
+                val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+                var text = hintData.label.text
                 text += charTyped
                 hintData.label.text = text
                 val comp = hint.component as MyPanel
@@ -220,9 +220,9 @@ class IncrementalSearchHandler {
             if (data?.hint == null) {
                 myOriginalHandler.execute(editor, caret, dataContext)
             } else {
-                val hint = data.hint
-                val hintData = hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
-                var text = hintData!!.label.text
+                val hint = data.hint ?: return
+                val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+                var text = hintData.label.text
                 if (text.isNotEmpty()) {
                     text = text.substring(0, text.length - 1)
                 }
@@ -275,8 +275,8 @@ class IncrementalSearchHandler {
         private var ourActionsRegistered = false
 
         private fun searchBackwardNext(editor: Editor, hint: LightweightHint) {
-            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
-            hintData!!.label.text ?: return
+            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+            hintData.label.text ?: return
             hintData.searchStart = editor.caretModel.offset
             if (hintData.searchStart == 0) return
             hintData.searchStart--
@@ -285,8 +285,8 @@ class IncrementalSearchHandler {
         }
 
         private fun searchForwardNext(editor: Editor, hint: LightweightHint) {
-            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
-            hintData!!.label.text ?: return
+            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+            hintData.label.text ?: return
             hintData.searchStart = editor.caretModel.offset
             if (hintData.searchStart == editor.document.textLength) return
             hintData.searchStart++
