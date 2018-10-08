@@ -421,7 +421,7 @@ class IncrementalSearchHandler {
                 data.ignoreCaretMove = true
                 editor.caretModel.moveToOffset(index)
                 editor.selectionModel.removeSelection()
-                editor.scrollingModel.scrollToCaret(ScrollType.CENTER)
+                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
                 data.ignoreCaretMove = false
                 IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
             }
