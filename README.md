@@ -1,6 +1,11 @@
 # isearch IntelliJ plugin
-isearch enables you incremental search backward.
-This project is under development.
+isearch plugin.
+This plugin adds isearch-forward and isearch-backward action which are like Emacs.
+
+Default keymap(Mac)
+
+* isearch-forward:  Control-S
+* isearch-backward: Control-R
 
 # Using OSS
 This project is based on these source codes with Apache 2.0 license
