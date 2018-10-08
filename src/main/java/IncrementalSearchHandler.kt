@@ -353,91 +353,99 @@ class IncrementalSearchHandler {
             var matchLength = prefix.length
             var index: Int
 
-            if (matchLength == 0) {
-                index = data.searchStart
-            } else {
-                val document = editor.document
-                val text = document.charsSequence
-                val length = document.textLength
-                val caseSensitive = detectSmartCaseSensitive(prefix)
+            // todo: Refactoring
+            val caretAction = object : CaretAction {
+                override fun perform(_caret: Caret?) {
+                    val caret = _caret ?: return
+                    val searchStart = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
+                    if (matchLength == 0) {
+                        index = searchStart
+                    } else {
+                        val document = editor.document
+                        val text = document.charsSequence
+                        val length = document.textLength
+                        val caseSensitive = detectSmartCaseSensitive(prefix)
 
-                if (acceptableRegExp(prefix)) {
-                    @NonNls val buf = StringBuffer(prefix.length)
-                    val len = prefix.length
+                        if (acceptableRegExp(prefix)) {
+                            @NonNls val buf = StringBuffer(prefix.length)
+                            val len = prefix.length
 
-                    for (i in 0 until len) {
-                        val ch = prefix[i]
+                            for (i in 0 until len) {
+                                val ch = prefix[i]
 
-                        // bother only * withing text
-                        if (ch == '*' && i != 0 && i != len - 1) {
-                            buf.append("\\w")
-                        } else if ("{}[].+^$*()?".indexOf(ch) != -1) {
-                            // do not bother with other metachars
-                            buf.append('\\')
-                        }
-                        buf.append(ch)
-                    }
-
-                    try {
-                        val pattern = Pattern.compile(buf.toString(), if (caseSensitive) 0 else Pattern.CASE_INSENSITIVE)
-                        val matcher = pattern.matcher(text)
-                        if (searchBack) {
-                            var lastStart = -1
-                            var lastEnd = -1
-
-                            while (matcher.find() && matcher.start() < data.searchStart) {
-                                lastStart = matcher.start()
-                                lastEnd = matcher.end()
+                                // bother only * withing text
+                                if (ch == '*' && i != 0 && i != len - 1) {
+                                    buf.append("\\w")
+                                } else if ("{}[].+^$*()?".indexOf(ch) != -1) {
+                                    // do not bother with other metachars
+                                    buf.append('\\')
+                                }
+                                buf.append(ch)
                             }
 
-                            index = lastStart
-                            matchLength = lastEnd - lastStart
-                        } else if (matcher.find(data.searchStart) || !nothingIfFailed && matcher.find(0)) {
-                            index = matcher.start()
-                            matchLength = matcher.end() - matcher.start()
+                            try {
+                                val pattern = Pattern.compile(buf.toString(), if (caseSensitive) 0 else Pattern.CASE_INSENSITIVE)
+                                val matcher = pattern.matcher(text)
+                                if (searchBack) {
+                                    var lastStart = -1
+                                    var lastEnd = -1
+
+                                    while (matcher.find() && matcher.start() < searchStart) {
+                                        lastStart = matcher.start()
+                                        lastEnd = matcher.end()
+                                    }
+
+                                    index = lastStart
+                                    matchLength = lastEnd - lastStart
+                                } else if (matcher.find(searchStart) || !nothingIfFailed && matcher.find(0)) {
+                                    index = matcher.start()
+                                    matchLength = matcher.end() - matcher.start()
+                                } else {
+                                    index = -1
+                                }
+                            } catch (ex: PatternSyntaxException) {
+                                index = -1 // let the user to make the garbage pattern
+                            }
+
                         } else {
-                            index = -1
+                            val searcher = StringSearcher(prefix, caseSensitive, !searchBack)
+
+                            if (searchBack) {
+                                index = searcher.scan(text, 0, Math.max(0, searchStart - 1))
+                            } else {
+                                index = searcher.scan(text, searchStart, length)
+                                index = if (index < 0) -1 else index
+                            }
+                            if (index < 0 && !nothingIfFailed) {
+                                index = searcher.scan(text, 0, Math.max(0, text.length - 1))
+                            }
                         }
-                    } catch (ex: PatternSyntaxException) {
-                        index = -1 // let the user to make the garbage pattern
                     }
 
-                } else {
-                    val searcher = StringSearcher(prefix, caseSensitive, !searchBack)
-
-                    if (searchBack) {
-                        index = searcher.scan(text, 0, Math.max(0, data.searchStart - 1))
+                    if (nothingIfFailed && index < 0) return
+                    if (data.segmentHighlighter != null) {
+                        data.segmentHighlighter!!.dispose()
+                        data.segmentHighlighter = null
+                    }
+                    if (index < 0) {
+                        data.label.foreground = JBColor.RED
                     } else {
-                        index = searcher.scan(text, data.searchStart, length)
-                        index = if (index < 0) -1 else index
-                    }
-                    if (index < 0 && !nothingIfFailed) {
-                        index = searcher.scan(text, 0, Math.max(0, text.length - 1))
+                        data.label.foreground = JBColor.foreground()
+                        if (matchLength > 0) {
+                            val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
+                            data.segmentHighlighter = editor.markupModel
+                                    .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
+                        }
+                        data.ignoreCaretMove = true
+                        caret.moveToOffset(index)
+                        editor.selectionModel.removeSelection()
+                        editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+                        data.ignoreCaretMove = false
+                        IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
                     }
                 }
             }
-
-            if (nothingIfFailed && index < 0) return
-            if (data.segmentHighlighter != null) {
-                data.segmentHighlighter!!.dispose()
-                data.segmentHighlighter = null
-            }
-            if (index < 0) {
-                data.label.foreground = JBColor.RED
-            } else {
-                data.label.foreground = JBColor.foreground()
-                if (matchLength > 0) {
-                    val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
-                    data.segmentHighlighter = editor.markupModel
-                            .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
-                }
-                data.ignoreCaretMove = true
-                editor.caretModel.moveToOffset(index)
-                editor.selectionModel.removeSelection()
-                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
-                data.ignoreCaretMove = false
-                IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
-            }
+            editor.caretModel.runForEachCaret(caretAction)
         }
 
         private fun detectSmartCaseSensitive(prefix: String): Boolean {
