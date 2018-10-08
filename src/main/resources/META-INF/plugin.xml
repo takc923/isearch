@@ -25,5 +25,8 @@
         <action id="ISearchBackward" class="ISearchBackwardAction" text="isearch-backward" description="isearch-backward">
             <keyboard-shortcut first-keystroke="meta R" keymap="$default"/>
         </action>
+        <action id="ISearchForward" class="ISearchForwardAction" text="isearch-forward" description="isearch-forward">
+            <keyboard-shortcut first-keystroke="meta S" keymap="$default"/>
+        </action>
     </actions>
 </idea-plugin>
