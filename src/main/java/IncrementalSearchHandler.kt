@@ -65,7 +65,7 @@ class IncrementalSearchHandler {
 
     private class PerEditorSearchData {
         internal var hint: LightweightHint? = null
-        internal var lastSearch: String? = null
+        internal var lastSearch: String = ""
     }
 
     operator fun invoke(project: Project, editor: Editor) {
@@ -88,18 +88,13 @@ class IncrementalSearchHandler {
         var data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
         if (data == null) {
             data = PerEditorSearchData()
-        } else {
-            if (data.hint != null) {
-                val lastSearch = data.lastSearch
-                if (lastSearch is String) {
-                    val hintData = data.hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
-                    //The user has not started typing
-                    if ("" == hintData!!.label.text) {
-                        label2 = MyLabel(lastSearch)
-                    }
-                }
-                data.hint!!.hide()
+        } else if (data.hint != null) {
+            val hintData = data.hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
+            //The user has not started typing
+            if ("" == hintData!!.label.text) {
+                label2 = MyLabel(data.lastSearch)
             }
+            data.hint!!.hide()
         }
 
         val label1 = MyLabel(" " + CodeInsightBundle.message("incremental.search.tooltip.prefix"))
@@ -121,9 +116,7 @@ class IncrementalSearchHandler {
 
                 super.hide()
 
-                if (data.segmentHighlighter != null) {
-                    data.segmentHighlighter!!.dispose()
-                }
+                data.segmentHighlighter?.dispose()
                 val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
                 editorData!!.hint = null
                 editorData.lastSearch = prefix
