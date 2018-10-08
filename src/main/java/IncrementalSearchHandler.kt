@@ -69,6 +69,7 @@ class IncrementalSearchHandler {
     }
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
+        currentSearchBack = searchBack
         if (!ourActionsRegistered) {
             val actionManager = EditorActionManager.getInstance()
 
@@ -208,7 +209,7 @@ class IncrementalSearchHandler {
                     hint.pack()
                     hint.updateLocation(bounds.x, bounds.y)
                 }
-                updatePosition(editor, hintData, false, true)
+                updatePosition(editor, hintData, false, currentSearchBack)
             }
         }
     }
@@ -227,7 +228,7 @@ class IncrementalSearchHandler {
                     text = text.substring(0, text.length - 1)
                 }
                 hintData.label.text = text
-                updatePosition(editor, hintData, false, false)
+                updatePosition(editor, hintData, false, currentSearchBack)
             }
         }
     }
@@ -291,6 +292,8 @@ class IncrementalSearchHandler {
         private val SEARCH_DATA_IN_HINT_KEY = Key.create<PerHintSearchData>("IncrementalSearchHandler.SEARCH_DATA_IN_HINT_KEY")
 
         private var ourActionsRegistered = false
+
+        private var currentSearchBack: Boolean = false
 
         private fun searchNext(editor: Editor, hint: LightweightHint, searchBack: Boolean) {
             if (searchBack) {
