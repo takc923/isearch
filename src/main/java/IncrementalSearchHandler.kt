@@ -292,6 +292,14 @@ class IncrementalSearchHandler {
 
         private var ourActionsRegistered = false
 
+        private fun searchNext(editor: Editor, hint: LightweightHint, searchBack: Boolean) {
+            if (searchBack) {
+                searchBackwardNext(editor, hint)
+            } else {
+                searchForwardNext(editor, hint)
+            }
+        }
+
         private fun searchBackwardNext(editor: Editor, hint: LightweightHint) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             hintData.label.text ?: return
