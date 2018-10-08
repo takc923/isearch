@@ -5,11 +5,19 @@
 
     <description><![CDATA[
     <p>isearch plugin.</p>
-    <p>This plugin adds isearch-backward action which does incremental search backward.</p>
-    <p>It is invoked by Control-R by default</p>
+    <p>This plugin adds isearch-forward and isearch-backward action which are like Emacs.</p>
+    <p>Default keymap(Mac)</p>
+    <p>  isearch-forward:  Control-S</p>
+    <p>  isearch-backward: Control-R</p>
     ]]></description>
 
-    <change-notes>Control + R to search next</change-notes>
+    <change-notes><![CDATA[
+      <ul>
+        <li>Add isearch-forward action</li>
+        <li>Change behavior where text is selected to be more like Emacs</li>
+        <li>Stop search by enter</li>
+      </ul>
+    ]]></change-notes>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
