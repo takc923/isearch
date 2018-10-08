@@ -83,8 +83,7 @@ class IncrementalSearchHandler {
             ourActionsRegistered = true
         }
 
-        val selection = editor.selectionModel.selectedText
-        val label2: JLabel = MyLabel(selection ?: "")
+        val label2: JLabel = MyLabel("")
 
         var data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
         if (data == null) {
