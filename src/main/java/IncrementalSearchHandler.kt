@@ -89,12 +89,15 @@ class IncrementalSearchHandler {
         if (data == null) {
             data = PerEditorSearchData()
         } else if (data.hint != null) {
-            val hintData = data.hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
-            //The user has not started typing
-            if ("" == hintData!!.label.text) {
-                label2 = MyLabel(data.lastSearch)
-            }
-            data.hint!!.hide()
+            val hint = data.hint
+            val hintData = hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
+            hintData!!.label.text ?: return
+            hintData.searchStart = editor.caretModel.offset
+            if (hintData.searchStart == 0) return
+            hintData.searchStart--
+            updatePosition(editor, hintData, true, true)
+            hintData.searchStart = editor.caretModel.offset
+            return
         }
 
         val label1 = MyLabel(" " + CodeInsightBundle.message("incremental.search.tooltip.prefix"))
