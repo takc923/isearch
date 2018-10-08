@@ -9,7 +9,7 @@
     <p>It is invoked by Control-R by default</p>
     ]]></description>
 
-    <change-notes>Fix IndexOutOfBoundsException bug.</change-notes>
+    <change-notes>Control + R to search next</change-notes>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
