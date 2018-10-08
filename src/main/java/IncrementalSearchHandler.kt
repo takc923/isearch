@@ -288,8 +288,8 @@ class IncrementalSearchHandler {
     }
 
     companion object {
-        private val SEARCH_DATA_IN_EDITOR_VIEW_KEY = Key.create<PerEditorSearchData>("IncrementalSearchHandler.SEARCH_DATA_IN_EDITOR_VIEW_KEY")
-        private val SEARCH_DATA_IN_HINT_KEY = Key.create<PerHintSearchData>("IncrementalSearchHandler.SEARCH_DATA_IN_HINT_KEY")
+        private val SEARCH_DATA_IN_EDITOR_VIEW_KEY = Key.create<PerEditorSearchData>("ISearchHandler.SEARCH_DATA_IN_EDITOR_VIEW_KEY")
+        private val SEARCH_DATA_IN_HINT_KEY = Key.create<PerHintSearchData>("ISearchHandler.SEARCH_DATA_IN_HINT_KEY")
 
         private var ourActionsRegistered = false
 
