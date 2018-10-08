@@ -195,10 +195,10 @@ class IncrementalSearchHandler {
 
         override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            if (data?.hint == null) {
+            val hint = data?.hint
+            if (hint == null) {
                 myOriginalHandler?.execute(editor, charTyped, dataContext)
             } else {
-                val hint = data.hint ?: return
                 val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
                 var text = hintData.label.text
                 text += charTyped
