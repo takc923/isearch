@@ -83,20 +83,14 @@ class IncrementalSearchHandler {
         }
 
         val selection = editor.selectionModel.selectedText
-        var label2: JLabel = MyLabel(selection ?: "")
+        val label2: JLabel = MyLabel(selection ?: "")
 
         var data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
         if (data == null) {
             data = PerEditorSearchData()
         } else if (data.hint != null) {
             val hint = data.hint
-            val hintData = hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
-            hintData!!.label.text ?: return
-            hintData.searchStart = editor.caretModel.offset
-            if (hintData.searchStart == 0) return
-            hintData.searchStart--
-            updatePosition(editor, hintData, true, true)
-            hintData.searchStart = editor.caretModel.offset
+            searchNext(editor, hint!!)
             return
         }
 
@@ -242,17 +236,11 @@ class IncrementalSearchHandler {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            if (data?.hint == null) {
+            val hint = data?.hint
+            if (hint == null) {
                 myOriginalHandler.execute(editor, caret, dataContext)
             } else {
-                val hint = data.hint
-                val hintData = hint!!.getUserData(SEARCH_DATA_IN_HINT_KEY)
-                hintData!!.label.text ?: return
-                hintData.searchStart = editor.caretModel.offset
-                if (hintData.searchStart == 0) return
-                hintData.searchStart--
-                updatePosition(editor, hintData, true, true)
-                hintData.searchStart = editor.caretModel.offset
+                searchNext(editor, hint)
             }
         }
 
@@ -291,6 +279,16 @@ class IncrementalSearchHandler {
         private val SEARCH_DATA_IN_HINT_KEY = Key.create<PerHintSearchData>("IncrementalSearchHandler.SEARCH_DATA_IN_HINT_KEY")
 
         private var ourActionsRegistered = false
+
+        private fun searchNext(editor: Editor, hint: LightweightHint) {
+            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
+            hintData!!.label.text ?: return
+            hintData.searchStart = editor.caretModel.offset
+            if (hintData.searchStart == 0) return
+            hintData.searchStart--
+            updatePosition(editor, hintData, true, true)
+            hintData.searchStart = editor.caretModel.offset
+        }
 
         private fun acceptableRegExp(pattern: String): Boolean {
             val len = pattern.length
