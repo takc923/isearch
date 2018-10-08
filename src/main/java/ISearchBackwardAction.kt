@@ -13,7 +13,7 @@ class ISearchBackwardAction : AnAction(), DumbAware {
         val project = CommonDataKeys.PROJECT.getData(dataContext) ?: return
         val editor = CommonDataKeys.EDITOR.getData(dataContext) ?: return
 
-        IncrementalSearchHandler().invoke(project, editor)
+        IncrementalSearchHandler().invoke(project, editor, true)
     }
 
     override fun update(event: AnActionEvent) {

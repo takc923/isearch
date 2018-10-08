@@ -68,7 +68,7 @@ class IncrementalSearchHandler {
         internal var lastSearch: String = ""
     }
 
-    operator fun invoke(project: Project, editor: Editor) {
+    operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
         if (!ourActionsRegistered) {
             val actionManager = EditorActionManager.getInstance()
 
@@ -90,7 +90,7 @@ class IncrementalSearchHandler {
             data = PerEditorSearchData()
         } else if (data.hint != null) {
             val hint = data.hint ?: return
-            searchBackwardNext(editor, hint)
+            searchNext(editor, hint, searchBack)
             return
         }
 
@@ -166,7 +166,7 @@ class IncrementalSearchHandler {
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
 
         if (hintData.label.text.isNotEmpty()) {
-            updatePosition(editor, hintData, true, false)
+            updatePosition(editor, hintData, true, searchBack)
         }
     }
 
