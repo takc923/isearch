@@ -21,7 +21,6 @@ import com.intellij.codeInsight.template.impl.editorActions.TypedActionHandlerBa
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.editor.Caret
-import com.intellij.openapi.editor.CaretAction
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
@@ -164,16 +163,7 @@ class IncrementalSearchHandler {
         hintData.searchStart = editor.caretModel.offset
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
-        // todo: Fix IntelliJ inspection
-        val setSearchStart = object : CaretAction {
-            override fun perform(_caret: Caret?) {
-                val caret = _caret ?: return
-                caret.putUserData(SEARCH_DATA_IN_CARET_KEY, caret.offset)
-            }
-        }
-        // todo: Consider lambda
-        // Set searchStart for each carets
-        editor.caretModel.runForEachCaret(setSearchStart)
+        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, it.offset) }
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
