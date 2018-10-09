@@ -13,10 +13,7 @@
 
     <change-notes><![CDATA[
       <ul>
-        <li>Add isearch-forward action</li>
-        <li>Change behavior where text is selected to be more like Emacs</li>
-        <li>Stop search by enter</li>
-        <li>Scroll only when the caret is invisible</li>
+        <li>Support multiple carets</li>
       </ul>
     ]]></change-notes>
 
