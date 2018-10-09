@@ -58,7 +58,6 @@ class IncrementalSearchHandler {
 
     private class PerHintSearchData constructor(internal val project: Project, internal val label: JLabel) {
 
-        internal var searchStart: Int = 0
         internal var segmentHighlighter: RangeHighlighter? = null
         internal var ignoreCaretMove = false
     }
@@ -67,6 +66,8 @@ class IncrementalSearchHandler {
         internal var hint: LightweightHint? = null
         internal var lastSearch: String = ""
     }
+
+    private class PerCaretSearchData constructor(internal var searchStart: Int)
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
         currentSearchBack = searchBack
@@ -91,7 +92,7 @@ class IncrementalSearchHandler {
             data = PerEditorSearchData()
         } else if (data.hint != null) {
             val hint = data.hint ?: return
-            searchNext(editor, hint, searchBack)
+            editor.caretModel.runForEachCaret { searchNext(it, editor, hint, searchBack) }
             return
         }
 
@@ -160,16 +161,15 @@ class IncrementalSearchHandler {
         HintManagerImpl.getInstanceImpl().showEditorHint(hint, editor, p, HintManagerImpl.HIDE_BY_ESCAPE or HintManagerImpl.HIDE_BY_TEXT_CHANGE, 0, false, HintHint(editor, p).setAwtTooltip(false))
 
         val hintData = PerHintSearchData(project, label2)
-        hintData.searchStart = editor.caretModel.offset
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
-        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, it.offset) }
+        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData(it.offset)) }
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
 
         if (hintData.label.text.isNotEmpty()) {
-            updatePosition(editor, hintData, true, searchBack)
+            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, true, searchBack) }
         }
     }
 
@@ -211,7 +211,7 @@ class IncrementalSearchHandler {
                     hint.pack()
                     hint.updateLocation(bounds.x, bounds.y)
                 }
-                updatePosition(editor, hintData, false, currentSearchBack)
+                editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, false, currentSearchBack) }
             }
         }
     }
@@ -230,7 +230,7 @@ class IncrementalSearchHandler {
                     text = text.substring(0, text.length - 1)
                 }
                 hintData.label.text = text
-                updatePosition(editor, hintData, false, currentSearchBack)
+                editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, false, currentSearchBack) }
             }
         }
     }
@@ -243,7 +243,7 @@ class IncrementalSearchHandler {
             if (hint == null) {
                 myOriginalHandler.execute(editor, caret, dataContext)
             } else {
-                searchBackwardNext(editor, hint)
+                editor.caretModel.runForEachCaret { searchBackwardNext(it, editor, hint) }
             }
         }
 
@@ -261,7 +261,7 @@ class IncrementalSearchHandler {
             if (hint == null) {
                 myOriginalHandler.execute(editor, caret, dataContext)
             } else {
-                searchForwardNext(editor, hint)
+                editor.caretModel.runForEachCaret { searchForwardNext(it, editor, hint) }
             }
         }
 
@@ -292,38 +292,40 @@ class IncrementalSearchHandler {
     companion object {
         private val SEARCH_DATA_IN_EDITOR_VIEW_KEY = Key.create<PerEditorSearchData>("ISearchHandler.SEARCH_DATA_IN_EDITOR_VIEW_KEY")
         private val SEARCH_DATA_IN_HINT_KEY = Key.create<PerHintSearchData>("ISearchHandler.SEARCH_DATA_IN_HINT_KEY")
-        private val SEARCH_DATA_IN_CARET_KEY = Key.create<Int>("ISearchHandler.SEARCH_DATA_IN_CARET_KEY")
+        private val SEARCH_DATA_IN_CARET_KEY = Key.create<PerCaretSearchData>("ISearchHandler.SEARCH_DATA_IN_CARET_KEY")
 
         private var ourActionsRegistered = false
 
         private var currentSearchBack: Boolean = false
 
-        private fun searchNext(editor: Editor, hint: LightweightHint, searchBack: Boolean) {
+        private fun searchNext(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean) {
             if (searchBack) {
-                searchBackwardNext(editor, hint)
+                searchBackwardNext(caret, editor, hint)
             } else {
-                searchForwardNext(editor, hint)
+                searchForwardNext(caret, editor, hint)
             }
         }
 
-        private fun searchBackwardNext(editor: Editor, hint: LightweightHint) {
+        private fun searchBackwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+            val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             hintData.label.text ?: return
-            hintData.searchStart = editor.caretModel.offset
-            if (hintData.searchStart == 0) return
-            hintData.searchStart--
-            updatePosition(editor, hintData, true, true)
-            hintData.searchStart = editor.caretModel.offset
+            caretData.searchStart = caret.offset
+            if (caretData.searchStart == 0) return
+            caretData.searchStart--
+            updatePosition(caret, editor, hintData, true, true)
+            caretData.searchStart = caret.offset
         }
 
-        private fun searchForwardNext(editor: Editor, hint: LightweightHint) {
+        private fun searchForwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+            val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             hintData.label.text ?: return
-            hintData.searchStart = editor.caretModel.offset
-            if (hintData.searchStart == editor.document.textLength) return
-            hintData.searchStart++
-            updatePosition(editor, hintData, true, false)
-            hintData.searchStart = editor.caretModel.offset
+            caretData.searchStart = caret.offset
+            if (caretData.searchStart == editor.document.textLength) return
+            caretData.searchStart++
+            updatePosition(caret, editor, hintData, true, false)
+            caretData.searchStart = caret.offset
         }
 
         private fun acceptableRegExp(pattern: String): Boolean {
@@ -338,13 +340,14 @@ class IncrementalSearchHandler {
             return false
         }
 
-        private fun updatePosition(editor: Editor, data: PerHintSearchData, nothingIfFailed: Boolean, searchBack: Boolean) {
+        private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, nothingIfFailed: Boolean, searchBack: Boolean) {
             val prefix = data.label.text
             var matchLength = prefix.length
             var index: Int
+            val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
 
             if (matchLength == 0) {
-                index = data.searchStart
+                index = caretData.searchStart
             } else {
                 val document = editor.document
                 val text = document.charsSequence
@@ -375,14 +378,14 @@ class IncrementalSearchHandler {
                             var lastStart = -1
                             var lastEnd = -1
 
-                            while (matcher.find() && matcher.start() < data.searchStart) {
+                            while (matcher.find() && matcher.start() < caretData.searchStart) {
                                 lastStart = matcher.start()
                                 lastEnd = matcher.end()
                             }
 
                             index = lastStart
                             matchLength = lastEnd - lastStart
-                        } else if (matcher.find(data.searchStart) || !nothingIfFailed && matcher.find(0)) {
+                        } else if (matcher.find(caretData.searchStart) || !nothingIfFailed && matcher.find(0)) {
                             index = matcher.start()
                             matchLength = matcher.end() - matcher.start()
                         } else {
@@ -396,9 +399,9 @@ class IncrementalSearchHandler {
                     val searcher = StringSearcher(prefix, caseSensitive, !searchBack)
 
                     if (searchBack) {
-                        index = searcher.scan(text, 0, Math.max(0, data.searchStart - 1))
+                        index = searcher.scan(text, 0, Math.max(0, caretData.searchStart - 1))
                     } else {
-                        index = searcher.scan(text, data.searchStart, length)
+                        index = searcher.scan(text, caretData.searchStart, length)
                         index = if (index < 0) -1 else index
                     }
                     if (index < 0 && !nothingIfFailed) {
@@ -421,8 +424,9 @@ class IncrementalSearchHandler {
                     data.segmentHighlighter = editor.markupModel
                             .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
                 }
+                // todo: What is this?
                 data.ignoreCaretMove = true
-                editor.caretModel.moveToOffset(index)
+                caret.moveToOffset(index)
                 editor.selectionModel.removeSelection()
                 editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
                 data.ignoreCaretMove = false
