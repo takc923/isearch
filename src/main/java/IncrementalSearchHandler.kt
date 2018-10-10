@@ -323,7 +323,7 @@ class IncrementalSearchHandler {
 
         private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, nothingIfFailed: Boolean, searchBack: Boolean) {
             val prefix = data.label.text
-            var matchLength = prefix.length
+            val matchLength = prefix.length
             var index: Int
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
 
