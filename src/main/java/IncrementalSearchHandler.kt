@@ -164,10 +164,6 @@ class IncrementalSearchHandler {
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
-
-        if (hintData.label.text.isNotEmpty()) {
-            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, true, searchBack) }
-        }
     }
 
     private class MyLabel constructor(text: String) : JLabel(text) {
