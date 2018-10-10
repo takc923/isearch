@@ -329,15 +329,7 @@ class IncrementalSearchHandler {
         }
 
         private fun acceptableRegExp(pattern: String): Boolean {
-            val len = pattern.length
-
-            for (i in 0 until len) {
-                when (pattern[i]) {
-                    '*' -> return true
-                }
-            }
-
-            return false
+            return pattern.contains('*')
         }
 
         private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, nothingIfFailed: Boolean, searchBack: Boolean) {
