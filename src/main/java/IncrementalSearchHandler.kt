@@ -42,13 +42,10 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.LightweightHint
 import com.intellij.util.text.StringSearcher
 import com.intellij.util.ui.UIUtil
-import org.jetbrains.annotations.NonNls
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
 import java.awt.Font
-import java.util.regex.Pattern
-import java.util.regex.PatternSyntaxException
 import javax.swing.BorderFactory
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -328,10 +325,6 @@ class IncrementalSearchHandler {
             caretData.searchStart = caret.offset
         }
 
-        private fun acceptableRegExp(pattern: String): Boolean {
-            return pattern.contains('*')
-        }
-
         private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, nothingIfFailed: Boolean, searchBack: Boolean) {
             val prefix = data.label.text
             var matchLength = prefix.length
@@ -345,60 +338,16 @@ class IncrementalSearchHandler {
                 val text = document.charsSequence
                 val length = document.textLength
                 val caseSensitive = detectSmartCaseSensitive(prefix)
+                val searcher = StringSearcher(prefix, caseSensitive, !searchBack)
 
-                if (acceptableRegExp(prefix)) {
-                    @NonNls val buf = StringBuffer(prefix.length)
-                    val len = prefix.length
-
-                    for (i in 0 until len) {
-                        val ch = prefix[i]
-
-                        // bother only * withing text
-                        if (ch == '*' && i != 0 && i != len - 1) {
-                            buf.append("\\w")
-                        } else if ("{}[].+^$*()?".indexOf(ch) != -1) {
-                            // do not bother with other metachars
-                            buf.append('\\')
-                        }
-                        buf.append(ch)
-                    }
-
-                    try {
-                        val pattern = Pattern.compile(buf.toString(), if (caseSensitive) 0 else Pattern.CASE_INSENSITIVE)
-                        val matcher = pattern.matcher(text)
-                        if (searchBack) {
-                            var lastStart = -1
-                            var lastEnd = -1
-
-                            while (matcher.find() && matcher.start() < caretData.searchStart) {
-                                lastStart = matcher.start()
-                                lastEnd = matcher.end()
-                            }
-
-                            index = lastStart
-                            matchLength = lastEnd - lastStart
-                        } else if (matcher.find(caretData.searchStart) || !nothingIfFailed && matcher.find(0)) {
-                            index = matcher.start()
-                            matchLength = matcher.end() - matcher.start()
-                        } else {
-                            index = -1
-                        }
-                    } catch (ex: PatternSyntaxException) {
-                        index = -1 // let the user to make the garbage pattern
-                    }
-
+                if (searchBack) {
+                    index = searcher.scan(text, 0, Math.max(0, caretData.searchStart - 1))
                 } else {
-                    val searcher = StringSearcher(prefix, caseSensitive, !searchBack)
-
-                    if (searchBack) {
-                        index = searcher.scan(text, 0, Math.max(0, caretData.searchStart - 1))
-                    } else {
-                        index = searcher.scan(text, caretData.searchStart, length)
-                        index = if (index < 0) -1 else index
-                    }
-                    if (index < 0 && !nothingIfFailed) {
-                        index = searcher.scan(text, 0, Math.max(0, text.length - 1))
-                    }
+                    index = searcher.scan(text, caretData.searchStart, length)
+                    index = if (index < 0) -1 else index
+                }
+                if (index < 0 && !nothingIfFailed) {
+                    index = searcher.scan(text, 0, Math.max(0, text.length - 1))
                 }
             }
 
