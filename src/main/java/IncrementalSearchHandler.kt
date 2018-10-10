@@ -371,16 +371,8 @@ class IncrementalSearchHandler {
             }
         }
 
-        private fun detectSmartCaseSensitive(prefix: String): Boolean {
-            var hasUpperCase = false
-            for (i in 0 until prefix.length) {
-                val c = prefix[i]
-                if (Character.isUpperCase(c) && Character.toUpperCase(c) != Character.toLowerCase(c)) {
-                    hasUpperCase = true
-                    break
-                }
-            }
-            return hasUpperCase
-        }
+        private fun detectSmartCaseSensitive(prefix: String): Boolean =
+                prefix.any { Character.isUpperCase(it) && Character.toUpperCase(it) != Character.toLowerCase(it) }
+
     }
 }
