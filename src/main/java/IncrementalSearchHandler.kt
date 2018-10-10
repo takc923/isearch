@@ -361,7 +361,6 @@ class IncrementalSearchHandler {
                     data.segmentHighlighter = editor.markupModel
                             .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
                 }
-                // todo: What is this?
                 data.ignoreCaretMove = true
                 caret.moveToOffset(index)
                 editor.selectionModel.removeSelection()
