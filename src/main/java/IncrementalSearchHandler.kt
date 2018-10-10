@@ -337,13 +337,13 @@ class IncrementalSearchHandler {
                 val searcher = StringSearcher(prefix, caseSensitive, !searchBack)
 
                 if (searchBack) {
-                    index = searcher.scan(text, 0, Math.max(0, caretData.searchStart - 1))
+                    index = searcher.scan(text, 0, maxOf(0, caretData.searchStart - 1))
                 } else {
                     index = searcher.scan(text, caretData.searchStart, length)
                     index = if (index < 0) -1 else index
                 }
                 if (index < 0 && !nothingIfFailed) {
-                    index = searcher.scan(text, 0, Math.max(0, text.length - 1))
+                    index = searcher.scan(text, 0, maxOf(0, text.length - 1))
                 }
             }
 
