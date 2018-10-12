@@ -336,10 +336,9 @@ class IncrementalSearchHandler {
                 else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, caretData.searchStart, length)
             }
 
-            if (data.segmentHighlighter != null) {
-                data.segmentHighlighter!!.dispose()
-                data.segmentHighlighter = null
-            }
+            data.segmentHighlighter?.dispose()
+            data.segmentHighlighter = null
+
             if (index < 0) {
                 data.label.foreground = JBColor.RED
             } else {
