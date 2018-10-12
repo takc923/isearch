@@ -341,20 +341,20 @@ class IncrementalSearchHandler {
 
             if (index < 0) {
                 data.label.foreground = JBColor.RED
-            } else {
-                data.label.foreground = JBColor.foreground()
-                if (matchLength > 0) {
-                    val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
-                    data.segmentHighlighter = editor.markupModel
-                            .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
-                }
-                data.ignoreCaretMove = true
-                caret.moveToOffset(index)
-                editor.selectionModel.removeSelection()
-                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
-                data.ignoreCaretMove = false
-                IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
+                return
             }
+            data.label.foreground = JBColor.foreground()
+            if (matchLength > 0) {
+                val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
+                data.segmentHighlighter = editor.markupModel
+                        .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
+            }
+            data.ignoreCaretMove = true
+            caret.moveToOffset(index)
+            editor.selectionModel.removeSelection()
+            editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+            data.ignoreCaretMove = false
+            IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
         }
 
         private fun detectSmartCaseSensitive(prefix: String): Boolean =
