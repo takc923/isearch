@@ -324,24 +324,16 @@ class IncrementalSearchHandler {
         private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, searchBack: Boolean) {
             val prefix = data.label.text
             val matchLength = prefix.length
-            var index: Int
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
+            val document = editor.document
+            val text = document.charsSequence
+            val length = document.textLength
+            val caseSensitive = detectSmartCaseSensitive(prefix)
 
-            if (matchLength == 0) {
-                index = caretData.searchStart
-            } else {
-                val document = editor.document
-                val text = document.charsSequence
-                val length = document.textLength
-                val caseSensitive = detectSmartCaseSensitive(prefix)
-                val searcher = StringSearcher(prefix, caseSensitive, !searchBack)
-
-                if (searchBack) {
-                    index = searcher.scan(text, 0, maxOf(0, caretData.searchStart - 1))
-                } else {
-                    index = searcher.scan(text, caretData.searchStart, length)
-                    index = if (index < 0) -1 else index
-                }
+            val index = when {
+                matchLength == 0 -> caretData.searchStart
+                searchBack -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, 0, maxOf(0, caretData.searchStart - 1))
+                else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, caretData.searchStart, length)
             }
 
             if (data.segmentHighlighter != null) {
