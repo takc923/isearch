@@ -204,7 +204,7 @@ class IncrementalSearchHandler {
                     hint.pack()
                     hint.updateLocation(bounds.x, bounds.y)
                 }
-                editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, false, currentSearchBack) }
+                editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack) }
             }
         }
     }
@@ -223,7 +223,7 @@ class IncrementalSearchHandler {
                     text = text.substring(0, text.length - 1)
                 }
                 hintData.label.text = text
-                editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, false, currentSearchBack) }
+                editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack) }
             }
         }
     }
@@ -306,7 +306,7 @@ class IncrementalSearchHandler {
             caretData.searchStart = caret.offset
             if (caretData.searchStart == 0) return
             caretData.searchStart--
-            updatePosition(caret, editor, hintData, true, true)
+            updatePosition(caret, editor, hintData, true)
             caretData.searchStart = caret.offset
         }
 
@@ -317,11 +317,11 @@ class IncrementalSearchHandler {
             caretData.searchStart = caret.offset
             if (caretData.searchStart == editor.document.textLength) return
             caretData.searchStart++
-            updatePosition(caret, editor, hintData, true, false)
+            updatePosition(caret, editor, hintData, false)
             caretData.searchStart = caret.offset
         }
 
-        private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, nothingIfFailed: Boolean, searchBack: Boolean) {
+        private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, searchBack: Boolean) {
             val prefix = data.label.text
             val matchLength = prefix.length
             var index: Int
@@ -342,12 +342,8 @@ class IncrementalSearchHandler {
                     index = searcher.scan(text, caretData.searchStart, length)
                     index = if (index < 0) -1 else index
                 }
-                if (index < 0 && !nothingIfFailed) {
-                    index = searcher.scan(text, 0, maxOf(0, text.length - 1))
-                }
             }
 
-            if (nothingIfFailed && index < 0) return
             if (data.segmentHighlighter != null) {
                 data.segmentHighlighter!!.dispose()
                 data.segmentHighlighter = null
