@@ -96,18 +96,14 @@ class IncrementalSearchHandler {
         panel.add(label2, BorderLayout.CENTER)
         panel.border = BorderFactory.createLineBorder(JBColor.black)
 
-        val documentListener = arrayOfNulls<DocumentListener>(1)
-        val caretListener = arrayOfNulls<CaretListener>(1)
         val document = editor.document
 
         val dListener = object : DocumentListener {
             override fun documentChanged(e: DocumentEvent?) {
                 val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
-                if (!hint.isVisible) return
                 hint.hide()
             }
         }
-        documentListener[0] = dListener
         document.addDocumentListener(dListener)
 
         val listener = object : CaretListener {
@@ -115,15 +111,14 @@ class IncrementalSearchHandler {
                 val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
                 val data = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
                 if (data != null && data.ignoreCaretMove) return
-                if (!hint.isVisible) return
                 hint.hide()
             }
         }
-        caretListener[0] = listener
         editor.caretModel.addCaretListener(listener)
 
         val hint = object : LightweightHint(panel) {
             override fun hide() {
+                if(!isVisible) return
                 val data = getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
 
                 super.hide()
@@ -131,17 +126,8 @@ class IncrementalSearchHandler {
                 data.segmentHighlighter?.dispose()
                 val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
                 editorData.hint = null
-
-                val dListener = documentListener[0]
-                if (dListener != null) {
-                    document.removeDocumentListener(dListener)
-                    documentListener[0] = null
-                }
-
-                val cListener = caretListener[0]
-                if (cListener != null) {
-                    editor.caretModel.removeCaretListener(cListener)
-                }
+                document.removeDocumentListener(dListener)
+                editor.caretModel.removeCaretListener(listener)
             }
         }
 
@@ -243,7 +229,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else if (hint.isVisible) hint.hide()
+            else hint.hide()
         }
 
         override fun isEnabled(editor: Editor, dataContext: DataContext): Boolean {
