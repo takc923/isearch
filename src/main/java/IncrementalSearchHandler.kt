@@ -278,13 +278,12 @@ class IncrementalSearchHandler {
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             val document = editor.document
             val text = document.charsSequence
-            val length = document.textLength
             val caseSensitive = detectSmartCaseSensitive(prefix)
 
             val index = when {
                 matchLength == 0 -> caretData.searchStart
                 searchBack -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, 0, maxOf(0, caretData.searchStart - 1))
-                else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, caretData.searchStart, length)
+                else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, caretData.searchStart, document.textLength)
             }
 
             data.segmentHighlighter?.dispose()
