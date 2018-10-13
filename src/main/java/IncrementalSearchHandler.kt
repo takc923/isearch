@@ -61,7 +61,6 @@ class IncrementalSearchHandler {
 
     private class PerEditorSearchData {
         internal var hint: LightweightHint? = null
-        internal var lastSearch: String = ""
     }
 
     private class PerCaretSearchData constructor(internal var searchStart: Int)
@@ -112,7 +111,6 @@ class IncrementalSearchHandler {
                 data.segmentHighlighter?.dispose()
                 val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
                 editorData.hint = null
-                editorData.lastSearch = prefix
 
                 val dListener = documentListener[0]
                 if (dListener != null) {
@@ -129,6 +127,7 @@ class IncrementalSearchHandler {
 
         val dListener = object : DocumentListener {
             override fun documentChanged(e: DocumentEvent?) {
+
                 if (!hint.isVisible) return
                 hint.hide()
             }
