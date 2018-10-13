@@ -54,7 +54,6 @@ import javax.swing.SwingUtilities
 class IncrementalSearchHandler {
 
     private class PerHintSearchData constructor(internal val project: Project, internal val label: JLabel) {
-
         internal var segmentHighlighter: RangeHighlighter? = null
         internal var ignoreCaretMove = false
     }
@@ -104,7 +103,6 @@ class IncrementalSearchHandler {
         val hint = object : LightweightHint(panel) {
             override fun hide() {
                 val data = getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-                val prefix = data.label.text
 
                 super.hide()
 
@@ -217,7 +215,6 @@ class IncrementalSearchHandler {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
             else editor.caretModel.runForEachCaret { searchBackwardNext(it, editor, hint) }
-
         }
 
         override fun isEnabled(editor: Editor, dataContext: DataContext): Boolean {
