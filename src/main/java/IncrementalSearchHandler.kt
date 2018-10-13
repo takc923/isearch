@@ -84,13 +84,10 @@ class IncrementalSearchHandler {
 
         val label2: JLabel = MyLabel("")
 
-        var data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-        if (data == null) {
-            data = PerEditorSearchData()
-        } else if (data.hint != null) {
-            val hint = data.hint ?: return
-            editor.caretModel.runForEachCaret { searchNext(it, editor, hint, searchBack) }
-            return
+        val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
+        val dataHint = data.hint
+        if (dataHint != null) {
+            return editor.caretModel.runForEachCaret { searchNext(it, editor, dataHint, searchBack) }
         }
 
         val label1 = MyLabel(" " + CodeInsightBundle.message("incremental.search.tooltip.prefix"))
