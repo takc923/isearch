@@ -100,8 +100,7 @@ class IncrementalSearchHandler {
 
         val dListener = object : DocumentListener {
             override fun documentChanged(e: DocumentEvent?) {
-                val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
-                hint.hide()
+                editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
             }
         }
         document.addDocumentListener(dListener)
