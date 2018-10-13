@@ -98,14 +98,14 @@ class IncrementalSearchHandler {
 
         val document = editor.document
 
-        val dListener = object : DocumentListener {
+        val documentListener = object : DocumentListener {
             override fun documentChanged(e: DocumentEvent?) {
                 editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
             }
         }
-        document.addDocumentListener(dListener)
+        document.addDocumentListener(documentListener)
 
-        val listener = object : CaretListener {
+        val caretListener = object : CaretListener {
             override fun caretPositionChanged(e: CaretEvent?) {
                 val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
                 val data = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
@@ -113,7 +113,7 @@ class IncrementalSearchHandler {
                 hint.hide()
             }
         }
-        editor.caretModel.addCaretListener(listener)
+        editor.caretModel.addCaretListener(caretListener)
 
         val hint = object : LightweightHint(panel) {
             override fun hide() {
@@ -125,8 +125,8 @@ class IncrementalSearchHandler {
                 data.segmentHighlighter?.dispose()
                 val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
                 editorData.hint = null
-                document.removeDocumentListener(dListener)
-                editor.caretModel.removeCaretListener(listener)
+                document.removeDocumentListener(documentListener)
+                editor.caretModel.removeCaretListener(caretListener)
             }
         }
 
