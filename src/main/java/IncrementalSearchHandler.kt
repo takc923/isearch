@@ -100,6 +100,28 @@ class IncrementalSearchHandler {
         val caretListener = arrayOfNulls<CaretListener>(1)
         val document = editor.document
 
+        val dListener = object : DocumentListener {
+            override fun documentChanged(e: DocumentEvent?) {
+                val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
+                if (!hint.isVisible) return
+                hint.hide()
+            }
+        }
+        documentListener[0] = dListener
+        document.addDocumentListener(dListener)
+
+        val listener = object : CaretListener {
+            override fun caretPositionChanged(e: CaretEvent?) {
+                val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
+                val data = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
+                if (data != null && data.ignoreCaretMove) return
+                if (!hint.isVisible) return
+                hint.hide()
+            }
+        }
+        caretListener[0] = listener
+        editor.caretModel.addCaretListener(listener)
+
         val hint = object : LightweightHint(panel) {
             override fun hide() {
                 val data = getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
@@ -122,27 +144,6 @@ class IncrementalSearchHandler {
                 }
             }
         }
-
-        val dListener = object : DocumentListener {
-            override fun documentChanged(e: DocumentEvent?) {
-
-                if (!hint.isVisible) return
-                hint.hide()
-            }
-        }
-        documentListener[0] = dListener
-        document.addDocumentListener(dListener)
-
-        val listener = object : CaretListener {
-            override fun caretPositionChanged(e: CaretEvent?) {
-                val data = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
-                if (data != null && data.ignoreCaretMove) return
-                if (!hint.isVisible) return
-                hint.hide()
-            }
-        }
-        caretListener[0] = listener
-        editor.caretModel.addCaretListener(listener)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
