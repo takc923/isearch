@@ -117,7 +117,7 @@ class IncrementalSearchHandler {
 
         val hint = object : LightweightHint(panel) {
             override fun hide() {
-                if(!isVisible) return
+                if (!isVisible) return
                 val data = getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
 
                 super.hide()
