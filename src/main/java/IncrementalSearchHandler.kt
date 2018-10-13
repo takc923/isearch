@@ -246,13 +246,9 @@ class IncrementalSearchHandler {
 
         private var currentSearchBack = false
 
-        private fun searchNext(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean) {
-            if (searchBack) {
-                searchBackwardNext(caret, editor, hint)
-            } else {
-                searchForwardNext(caret, editor, hint)
-            }
-        }
+        private fun searchNext(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean) =
+                if (searchBack) searchBackwardNext(caret, editor, hint)
+                else searchForwardNext(caret, editor, hint)
 
         private fun searchBackwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
