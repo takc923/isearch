@@ -54,7 +54,6 @@ import javax.swing.SwingUtilities
 class IncrementalSearchHandler {
 
     private class PerHintSearchData constructor(internal val project: Project, internal val label: JLabel) {
-        internal var segmentHighlighter: RangeHighlighter? = null
         internal var ignoreCaretMove = false
     }
 
@@ -62,7 +61,9 @@ class IncrementalSearchHandler {
         internal var hint: LightweightHint? = null
     }
 
-    private class PerCaretSearchData constructor(internal var searchStart: Int)
+    private class PerCaretSearchData constructor(internal var searchStart: Int) {
+        internal var segmentHighlighter: RangeHighlighter? = null
+    }
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
         currentSearchBack = searchBack
@@ -118,11 +119,14 @@ class IncrementalSearchHandler {
         val hint = object : LightweightHint(panel) {
             override fun hide() {
                 if (!isVisible) return
-                val data = getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
 
                 super.hide()
+                editor.caretModel.allCarets.forEach {
+                    val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
+                    caretData?.segmentHighlighter?.dispose()
+                    caretData?.segmentHighlighter = null
+                }
 
-                data.segmentHighlighter?.dispose()
                 val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
                 editorData.hint = null
                 document.removeDocumentListener(documentListener)
@@ -278,17 +282,16 @@ class IncrementalSearchHandler {
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             val document = editor.document
             val text = document.charsSequence
-            val length = document.textLength
             val caseSensitive = detectSmartCaseSensitive(prefix)
 
             val index = when {
                 matchLength == 0 -> caretData.searchStart
                 searchBack -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, 0, maxOf(0, caretData.searchStart - 1))
-                else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, caretData.searchStart, length)
+                else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, caretData.searchStart, document.textLength)
             }
 
-            data.segmentHighlighter?.dispose()
-            data.segmentHighlighter = null
+            caretData.segmentHighlighter?.dispose()
+            caretData.segmentHighlighter = null
 
             if (index < 0) {
                 data.label.foreground = JBColor.RED
@@ -297,7 +300,7 @@ class IncrementalSearchHandler {
             data.label.foreground = JBColor.foreground()
             if (matchLength > 0) {
                 val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
-                data.segmentHighlighter = editor.markupModel
+                caretData.segmentHighlighter = editor.markupModel
                         .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
             }
             data.ignoreCaretMove = true
