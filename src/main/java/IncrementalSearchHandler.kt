@@ -256,24 +256,14 @@ class IncrementalSearchHandler {
 
         private fun searchBackwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             hintData.label.text ?: return
-            caretData.searchStart = caret.offset
-            if (caretData.searchStart == 0) return
-            caretData.searchStart--
             updatePosition(caret, editor, hintData, true)
-            caretData.searchStart = caret.offset
         }
 
         private fun searchForwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             hintData.label.text ?: return
-            caretData.searchStart = caret.offset
-            if (caretData.searchStart == editor.document.textLength) return
-            caretData.searchStart++
             updatePosition(caret, editor, hintData, false)
-            caretData.searchStart = caret.offset
         }
 
         private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, searchBack: Boolean) {
