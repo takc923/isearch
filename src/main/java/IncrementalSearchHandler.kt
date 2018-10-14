@@ -183,8 +183,7 @@ class IncrementalSearchHandler {
                 hint.pack()
                 hint.updateLocation(bounds.x, bounds.y)
             }
-            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack) }
-
+            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack, it.offset) }
         }
     }
 
@@ -195,7 +194,10 @@ class IncrementalSearchHandler {
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             hintData.label.text = hintData.label.text.dropLast(1)
-            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack) }
+            editor.caretModel.runForEachCaret {
+                val searchStart = it.getUserData(SEARCH_DATA_IN_CARET_KEY)?.searchStart ?: 0
+                updatePosition(it, editor, hintData, currentSearchBack, searchStart)
+            }
         }
     }
 
@@ -256,17 +258,17 @@ class IncrementalSearchHandler {
 
         private fun searchBackwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            hintData.label.text ?: return
-            updatePosition(caret, editor, hintData, true)
+            val text = hintData.label.text ?: return
+            updatePosition(caret, editor, hintData, true, caret.offset + text.length - 1)
         }
 
         private fun searchForwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             hintData.label.text ?: return
-            updatePosition(caret, editor, hintData, false)
+            updatePosition(caret, editor, hintData, false, caret.offset + 1)
         }
 
-        private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, searchBack: Boolean) {
+        private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, searchBack: Boolean, searchStart: Int) {
             val prefix = data.label.text
             val matchLength = prefix.length
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
@@ -275,9 +277,9 @@ class IncrementalSearchHandler {
             val caseSensitive = detectSmartCaseSensitive(prefix)
 
             val index = when {
-                matchLength == 0 -> caretData.searchStart
-                searchBack -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, 0, maxOf(0, caretData.searchStart - 1))
-                else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, caretData.searchStart, document.textLength)
+                matchLength == 0 -> searchStart
+                searchBack -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, 0, maxOf(0, searchStart - 1))
+                else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, searchStart, document.textLength)
             }
 
             caretData.segmentHighlighter?.dispose()
