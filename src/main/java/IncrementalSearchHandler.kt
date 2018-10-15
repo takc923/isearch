@@ -308,7 +308,7 @@ class IncrementalSearchHandler {
             caretData.segmentHighlighter = null
 
             val color = if (searchResult < 0) JBColor.RED else JBColor.foreground()
-            val matchLength = if (searchResult < 0) 0 else targetLength
+            val matchLength = if (searchResult < 0) caretData.history.last().matchLength else targetLength
             val index = if (searchResult < 0) caret.offset else searchResult
 
             data.label.foreground = color
