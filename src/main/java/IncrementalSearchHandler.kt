@@ -66,6 +66,7 @@ class IncrementalSearchHandler {
         internal var segmentHighlighter: RangeHighlighter? = null
         internal val history: MutableList<CaretState> = mutableListOf()
     }
+
     private class CaretState(internal val offset: Int, internal val matchLength: Int, internal val hintState: HintState)
     private class HintState(internal val text: String, internal val color: Color)
 
@@ -292,14 +293,13 @@ class IncrementalSearchHandler {
 
         private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, searchBack: Boolean, searchStart: Int) {
             val prefix = data.label.text
-            val matchLength = prefix.length
+            val targetLength = prefix.length
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             val document = editor.document
             val text = document.charsSequence
             val caseSensitive = detectSmartCaseSensitive(prefix)
 
-            val index = when {
-                matchLength == 0 -> searchStart
+            val searchResult = when {
                 searchBack -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, 0, maxOf(0, searchStart - 1))
                 else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, searchStart, document.textLength)
             }
@@ -307,20 +307,18 @@ class IncrementalSearchHandler {
             caretData.segmentHighlighter?.dispose()
             caretData.segmentHighlighter = null
 
-            if (index < 0) {
-                data.label.foreground = JBColor.RED
-            } else {
-                data.label.foreground = JBColor.foreground()
-                if (matchLength > 0) {
-                    addHighlight(editor, caretData, index, matchLength)
-                }
-                data.ignoreCaretMove = true
-                caret.moveToOffset(index)
-                editor.selectionModel.removeSelection()
-                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
-                data.ignoreCaretMove = false
-                IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
-            }
+            val color = if (searchResult < 0) JBColor.RED else JBColor.foreground()
+            val matchLength = if (searchResult < 0) 0 else targetLength
+            val index = if (searchResult < 0) caret.offset else searchResult
+
+            data.label.foreground = color
+            data.ignoreCaretMove = true
+            caret.moveToOffset(index)
+            editor.selectionModel.removeSelection()
+            editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+            data.ignoreCaretMove = false
+            addHighlight(editor, caretData, caret.offset, matchLength)
+            IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
             caretData.history.add(CaretState(caret.offset, matchLength, HintState(data.label.text, data.label.foreground)))
         }
 
