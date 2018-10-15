@@ -58,8 +58,8 @@ class IncrementalSearchHandler {
         internal var hint: LightweightHint? = null
     }
 
-    private class PerCaretSearchData constructor(internal var searchStart: Int) {
-        constructor(searchStart: Int, caretState: CaretState) : this(searchStart) {
+    private class PerCaretSearchData constructor() {
+        constructor(caretState: CaretState) : this() {
             this.history.add(caretState)
         }
 
@@ -148,7 +148,7 @@ class IncrementalSearchHandler {
         val hintData = PerHintSearchData(project, label2)
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
-        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData(it.offset, CaretState(it.offset, 0, HintState("", JBColor.foreground())))) }
+        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData(CaretState(it.offset, 0, HintState("", JBColor.foreground())))) }
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
