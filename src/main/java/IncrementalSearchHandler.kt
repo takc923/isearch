@@ -200,6 +200,7 @@ class IncrementalSearchHandler {
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             editor.caretModel.runForEachCaret {
+                // todo: refactoring
                 hintData.label.text
                 val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
                 if (caretData != null) {
