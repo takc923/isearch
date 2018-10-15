@@ -42,10 +42,7 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.LightweightHint
 import com.intellij.util.text.StringSearcher
 import com.intellij.util.ui.UIUtil
-import java.awt.BorderLayout
-import java.awt.Component
-import java.awt.Dimension
-import java.awt.Font
+import java.awt.*
 import javax.swing.BorderFactory
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -62,8 +59,15 @@ class IncrementalSearchHandler {
     }
 
     private class PerCaretSearchData constructor(internal var searchStart: Int) {
+        constructor(searchStart: Int, caretState: CaretState) : this(searchStart) {
+            this.history + caretState
+        }
+
         internal var segmentHighlighter: RangeHighlighter? = null
+        internal val history = mutableListOf<CaretState>()
     }
+    private class CaretState(internal val offset: Int, matchLength: Int, hintState: HintState)
+    private class HintState(internal val text: String, color: Color)
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
         currentSearchBack = searchBack
@@ -144,7 +148,7 @@ class IncrementalSearchHandler {
         val hintData = PerHintSearchData(project, label2)
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
-        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData(it.offset)) }
+        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData(it.offset, CaretState(it.offset, 0, HintState("", JBColor.foreground())))) }
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
@@ -287,20 +291,25 @@ class IncrementalSearchHandler {
 
             if (index < 0) {
                 data.label.foreground = JBColor.RED
-                return
+            } else {
+                data.label.foreground = JBColor.foreground()
+                if (matchLength > 0) {
+                    addHighlight(editor, caretData, index, matchLength)
+                }
+                data.ignoreCaretMove = true
+                caret.moveToOffset(index)
+                editor.selectionModel.removeSelection()
+                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+                data.ignoreCaretMove = false
+                IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
             }
-            data.label.foreground = JBColor.foreground()
-            if (matchLength > 0) {
-                val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
-                caretData.segmentHighlighter = editor.markupModel
-                        .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
-            }
-            data.ignoreCaretMove = true
-            caret.moveToOffset(index)
-            editor.selectionModel.removeSelection()
-            editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
-            data.ignoreCaretMove = false
-            IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
+            caretData.history + CaretState(caret.offset, matchLength, HintState(data.label.text, data.label.foreground))
+        }
+
+        private fun addHighlight(editor: Editor, caretData: PerCaretSearchData, index: Int, matchLength: Int) {
+            val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
+            caretData.segmentHighlighter = editor.markupModel
+                    .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
         }
 
         private fun detectSmartCaseSensitive(prefix: String): Boolean =
