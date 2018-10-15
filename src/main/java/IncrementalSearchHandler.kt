@@ -60,14 +60,14 @@ class IncrementalSearchHandler {
 
     private class PerCaretSearchData constructor(internal var searchStart: Int) {
         constructor(searchStart: Int, caretState: CaretState) : this(searchStart) {
-            this.history + caretState
+            this.history.add(caretState)
         }
 
         internal var segmentHighlighter: RangeHighlighter? = null
-        internal val history = mutableListOf<CaretState>()
+        internal val history: MutableList<CaretState> = mutableListOf()
     }
-    private class CaretState(internal val offset: Int, matchLength: Int, hintState: HintState)
-    private class HintState(internal val text: String, color: Color)
+    private class CaretState(internal val offset: Int, internal val matchLength: Int, internal val hintState: HintState)
+    private class HintState(internal val text: String, internal val color: Color)
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
         currentSearchBack = searchBack
@@ -182,6 +182,7 @@ class IncrementalSearchHandler {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             hintData.label.text += charTyped
             val comp = hint.component as MyPanel
+            // todo
             if (comp.truePreferredSize.width > comp.size.width) {
                 val bounds = hint.bounds
                 hint.pack()
@@ -197,10 +198,27 @@ class IncrementalSearchHandler {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            hintData.label.text = hintData.label.text.dropLast(1)
             editor.caretModel.runForEachCaret {
-                val searchStart = it.getUserData(SEARCH_DATA_IN_CARET_KEY)?.searchStart ?: 0
-                updatePosition(it, editor, hintData, currentSearchBack, searchStart)
+                hintData.label.text
+                val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
+                if (caretData != null) {
+                    caretData.history.removeAt(caretData.history.lastIndex)
+                    val lastState = caretData.history.last()
+
+                    caretData.segmentHighlighter?.dispose()
+                    caretData.segmentHighlighter = null
+                    hintData.label.text = lastState.hintState.text
+                    hintData.label.foreground = lastState.hintState.color
+                    if (lastState.matchLength > 0) {
+                        addHighlight(editor, caretData, lastState.offset, lastState.matchLength)
+                    }
+                    hintData.ignoreCaretMove = true
+                    it.moveToOffset(lastState.offset)
+                    editor.selectionModel.removeSelection()
+                    editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+                    hintData.ignoreCaretMove = false
+                    IdeDocumentHistory.getInstance(hintData.project).includeCurrentCommandAsNavigation()
+                }
             }
         }
     }
@@ -303,7 +321,7 @@ class IncrementalSearchHandler {
                 data.ignoreCaretMove = false
                 IdeDocumentHistory.getInstance(data.project).includeCurrentCommandAsNavigation()
             }
-            caretData.history + CaretState(caret.offset, matchLength, HintState(data.label.text, data.label.foreground))
+            caretData.history.add(CaretState(caret.offset, matchLength, HintState(data.label.text, data.label.foreground)))
         }
 
         private fun addHighlight(editor: Editor, caretData: PerCaretSearchData, index: Int, matchLength: Int) {
