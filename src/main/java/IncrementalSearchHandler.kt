@@ -282,6 +282,8 @@ class IncrementalSearchHandler {
 
         private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, searchBack: Boolean, searchStart: Int) {
             val prefix = data.label.text
+            // todo: search lastSearch
+            if (prefix.isEmpty()) return
             val targetLength = prefix.length
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             val document = editor.document
