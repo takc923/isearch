@@ -114,8 +114,8 @@ class IncrementalSearchHandler {
         val caretListener = object : CaretListener {
             override fun caretPositionChanged(e: CaretEvent?) {
                 val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
-                val data = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
-                if (data != null && data.ignoreCaretMove) return
+                val caretData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY)
+                if (caretData != null && caretData.ignoreCaretMove) return
                 hint.hide()
             }
 
