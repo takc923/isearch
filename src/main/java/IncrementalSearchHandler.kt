@@ -201,6 +201,7 @@ class IncrementalSearchHandler {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
+                if (caretData.history.size <= 1) return
                 caretData.history.removeAt(caretData.history.lastIndex)
                 val lastState = caretData.history.last()
 
@@ -293,7 +294,7 @@ class IncrementalSearchHandler {
             }
 
             val color = if (searchResult < 0) JBColor.RED else JBColor.foreground()
-            val matchLength = if (searchResult < 0) caretData.history.last().matchLength else targetLength
+            val matchLength = if (searchResult < 0) caretData.history.lastOrNull()?.matchLength ?: 0 else targetLength
             val index = if (searchResult < 0) caret.offset else searchResult
 
             data.label.foreground = color
