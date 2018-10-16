@@ -67,8 +67,8 @@ class IncrementalSearchHandler {
         internal val history: MutableList<CaretState> = mutableListOf()
     }
 
-    private class CaretState(internal val offset: Int, internal val matchLength: Int, internal val hintState: HintState)
-    private class HintState(internal val text: String, internal val color: Color)
+    private data class CaretState(internal val offset: Int, internal val matchLength: Int, internal val hintState: HintState)
+    private data class HintState(internal val text: String, internal val color: Color)
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
         currentSearchBack = searchBack
@@ -301,7 +301,9 @@ class IncrementalSearchHandler {
 
             moveCaret(caretData, data, caret, index, editor, matchLength)
 
-            caretData.history.add(CaretState(caret.offset, matchLength, HintState(data.label.text, data.label.foreground)))
+            val latestCaretState = CaretState(caret.offset, matchLength, HintState(data.label.text, data.label.foreground))
+            if (caretData.history.lastOrNull() == latestCaretState) return
+            caretData.history.add(latestCaretState)
         }
 
         private fun moveCaret(caretData: PerCaretSearchData, data: PerHintSearchData, caret: Caret, index: Int, editor: Editor, matchLength: Int) {
