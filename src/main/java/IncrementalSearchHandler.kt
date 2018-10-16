@@ -182,13 +182,10 @@ class IncrementalSearchHandler {
             hint ?: return myOriginalHandler?.execute(editor, charTyped, dataContext) ?: Unit
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             hintData.label.text += charTyped
+
             val comp = hint.component as MyPanel
-            // todo
-            if (comp.truePreferredSize.width > comp.size.width) {
-                val bounds = hint.bounds
-                hint.pack()
-                hint.updateLocation(bounds.x, bounds.y)
-            }
+            if (comp.truePreferredSize.width > comp.size.width) hint.pack()
+
             editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack, it.offset) }
         }
     }
