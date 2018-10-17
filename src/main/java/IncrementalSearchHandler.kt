@@ -272,25 +272,25 @@ class IncrementalSearchHandler {
             updatePosition(caret, editor, hintData, searchBack, true)
         }
 
-        private fun StringSearcher.search(text: CharSequence, _start: Int, _end: Int): Int {
+        private fun search(caret: Caret, target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int {
+            val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
+            val diffForNext = if (isNext) 1 else 0
+            val (_start, _end) = when {
+                searchBack -> Pair(0, caret.offset + target.lastIndex - diffForNext)
+                else -> Pair(caret.offset + diffForNext, text.length)
+            }
             val start = minOf(text.length, maxOf(0, _start))
             val end = minOf(text.length, maxOf(0, _end))
-            return this.scan(text, start, end)
+            return searcher.scan(text, start, end)
         }
 
         private fun updatePosition(caret: Caret, editor: Editor, hintData: PerHintSearchData, searchBack: Boolean, isNext: Boolean) {
             val target = hintData.label.text
             // todo: search lastSearch
             if (target.isEmpty()) return
+            val searchResult = search(caret, target, editor.document.charsSequence, searchBack, isNext)
+
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
-            val document = editor.document
-            val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
-            val diffForNext = if (isNext) 1 else 0
-            val (start, end) = when {
-                searchBack -> Pair(0, caret.offset + target.length - 1 - diffForNext)
-                else -> Pair(caret.offset + diffForNext, document.textLength)
-            }
-            val searchResult = searcher.search(document.charsSequence, start, end)
             val (color, matchLength, newOffset) = when {
                 searchResult < 0 -> Triple(JBColor.RED, caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
                 else -> Triple(JBColor.foreground(), target.length, searchResult)
