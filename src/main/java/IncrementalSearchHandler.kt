@@ -295,13 +295,13 @@ class IncrementalSearchHandler {
                 else -> Pair(searchStart, document.textLength)
             }
             val searchResult = searcher.scan(document.charsSequence, start, end)
-            val (color, matchLength, index) = when {
+            val (color, matchLength, newOffset) = when {
                 searchResult < 0 -> Triple(JBColor.RED, caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
                 else -> Triple(JBColor.foreground(), target.length, searchResult)
             }
 
             hintData.label.foreground = color
-            moveCaret(caretData, hintData, caret, index, editor, matchLength)
+            moveCaret(caretData, hintData, caret, newOffset, editor, matchLength)
             val latestCaretState = CaretState(caret.offset, matchLength, HintState(hintData.label.text, hintData.label.foreground))
             if (caretData.history.lastOrNull() == latestCaretState) return
             caretData.history.add(latestCaretState)
