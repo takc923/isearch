@@ -192,7 +192,7 @@ class IncrementalSearchHandler {
             val comp = hint.component as MyPanel
             if (comp.truePreferredSize.width > comp.size.width) hint.pack()
 
-            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack, if (currentSearchBack) minOf(it.offset + hintData.label.text.length, editor.document.textLength) else it.offset) }
+            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack, false) }
         }
     }
 
@@ -221,7 +221,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else editor.caretModel.runForEachCaret { searchBackwardNext(it, editor, hint) }
+            else editor.caretModel.runForEachCaret { searchNext(it, editor, hint, true) }
         }
 
         override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
@@ -235,7 +235,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else editor.caretModel.runForEachCaret { searchForwardNext(it, editor, hint) }
+            else editor.caretModel.runForEachCaret { searchNext(it, editor, hint, false) }
         }
 
         override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
@@ -267,34 +267,30 @@ class IncrementalSearchHandler {
 
         private var currentSearchBack = false
 
-        private fun searchNext(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean) =
-                if (searchBack) searchBackwardNext(caret, editor, hint)
-                else searchForwardNext(caret, editor, hint)
-
-        private fun searchBackwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
+        private fun searchNext(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            val text = hintData.label.text ?: return
-            updatePosition(caret, editor, hintData, true, caret.offset + text.length - 1)
+            updatePosition(caret, editor, hintData, searchBack, true)
         }
 
-        private fun searchForwardNext(caret: Caret, editor: Editor, hint: LightweightHint) {
-            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            hintData.label.text ?: return
-            updatePosition(caret, editor, hintData, false, caret.offset + 1)
+        private fun StringSearcher.search(text: CharSequence, _start: Int, _end: Int): Int {
+            val start = minOf(text.length, maxOf(0, _start))
+            val end = minOf(text.length, maxOf(0, _end))
+            return this.scan(text, start, end)
         }
 
-        private fun updatePosition(caret: Caret, editor: Editor, hintData: PerHintSearchData, searchBack: Boolean, searchStart: Int) {
+        private fun updatePosition(caret: Caret, editor: Editor, hintData: PerHintSearchData, searchBack: Boolean, isNext: Boolean) {
             val target = hintData.label.text
             // todo: search lastSearch
             if (target.isEmpty()) return
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             val document = editor.document
             val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
+            val diffForNext = if (isNext) 1 else 0
             val (start, end) = when {
-                searchBack -> Pair(0, maxOf(0, searchStart - 1))
-                else -> Pair(searchStart, document.textLength)
+                searchBack -> Pair(0, caret.offset + target.length - 1 - diffForNext)
+                else -> Pair(caret.offset + diffForNext, document.textLength)
             }
-            val searchResult = searcher.scan(document.charsSequence, start, end)
+            val searchResult = searcher.search(document.charsSequence, start, end)
             val (color, matchLength, newOffset) = when {
                 searchResult < 0 -> Triple(JBColor.RED, caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
                 else -> Triple(JBColor.foreground(), target.length, searchResult)
