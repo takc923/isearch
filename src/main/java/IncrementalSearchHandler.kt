@@ -298,9 +298,10 @@ class IncrementalSearchHandler {
                 else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, searchStart, document.textLength)
             }
 
-            val color = if (searchResult < 0) JBColor.RED else JBColor.foreground()
-            val matchLength = if (searchResult < 0) caretData.history.lastOrNull()?.matchLength ?: 0 else targetLength
-            val index = if (searchResult < 0) caret.offset else searchResult
+            val (color, matchLength, index) = when {
+                searchResult < 0 -> Triple(JBColor.RED, caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
+                else -> Triple(JBColor.foreground(), targetLength, searchResult)
+            }
 
             hintData.label.foreground = color
 
