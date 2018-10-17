@@ -283,8 +283,8 @@ class IncrementalSearchHandler {
             updatePosition(caret, editor, hintData, false, caret.offset + 1)
         }
 
-        private fun updatePosition(caret: Caret, editor: Editor, data: PerHintSearchData, searchBack: Boolean, searchStart: Int) {
-            val prefix = data.label.text
+        private fun updatePosition(caret: Caret, editor: Editor, hintData: PerHintSearchData, searchBack: Boolean, searchStart: Int) {
+            val prefix = hintData.label.text
             // todo: search lastSearch
             if (prefix.isEmpty()) return
             val targetLength = prefix.length
@@ -302,11 +302,11 @@ class IncrementalSearchHandler {
             val matchLength = if (searchResult < 0) caretData.history.lastOrNull()?.matchLength ?: 0 else targetLength
             val index = if (searchResult < 0) caret.offset else searchResult
 
-            data.label.foreground = color
+            hintData.label.foreground = color
 
-            moveCaret(caretData, data, caret, index, editor, matchLength)
+            moveCaret(caretData, hintData, caret, index, editor, matchLength)
 
-            val latestCaretState = CaretState(caret.offset, matchLength, HintState(data.label.text, data.label.foreground))
+            val latestCaretState = CaretState(caret.offset, matchLength, HintState(hintData.label.text, hintData.label.foreground))
             if (caretData.history.lastOrNull() == latestCaretState) return
             caretData.history.add(latestCaretState)
         }
