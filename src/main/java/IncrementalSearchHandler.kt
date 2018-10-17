@@ -284,29 +284,24 @@ class IncrementalSearchHandler {
         }
 
         private fun updatePosition(caret: Caret, editor: Editor, hintData: PerHintSearchData, searchBack: Boolean, searchStart: Int) {
-            val prefix = hintData.label.text
+            val target = hintData.label.text
             // todo: search lastSearch
-            if (prefix.isEmpty()) return
-            val targetLength = prefix.length
+            if (target.isEmpty()) return
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             val document = editor.document
-            val text = document.charsSequence
-            val caseSensitive = detectSmartCaseSensitive(prefix)
-
-            val searchResult = when {
-                searchBack -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, 0, maxOf(0, searchStart - 1))
-                else -> StringSearcher(prefix, caseSensitive, !searchBack).scan(text, searchStart, document.textLength)
+            val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
+            val (start, end) = when {
+                searchBack -> Pair(0, maxOf(0, searchStart - 1))
+                else -> Pair(searchStart, document.textLength)
             }
-
+            val searchResult = searcher.scan(document.charsSequence, start, end)
             val (color, matchLength, index) = when {
                 searchResult < 0 -> Triple(JBColor.RED, caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
-                else -> Triple(JBColor.foreground(), targetLength, searchResult)
+                else -> Triple(JBColor.foreground(), target.length, searchResult)
             }
 
             hintData.label.foreground = color
-
             moveCaret(caretData, hintData, caret, index, editor, matchLength)
-
             val latestCaretState = CaretState(caret.offset, matchLength, HintState(hintData.label.text, hintData.label.foreground))
             if (caretData.history.lastOrNull() == latestCaretState) return
             caretData.history.add(latestCaretState)
