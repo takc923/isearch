@@ -50,7 +50,7 @@ import javax.swing.SwingUtilities
 
 class IncrementalSearchHandler {
 
-    private class PerHintSearchData constructor(internal val project: Project, internal val label: JLabel) {
+    private class PerHintSearchData(internal val project: Project, internal val label: JLabel) {
         internal var ignoreCaretMove = false
     }
 
@@ -58,7 +58,7 @@ class IncrementalSearchHandler {
         internal var hint: LightweightHint? = null
     }
 
-    private class PerCaretSearchData constructor() {
+    private class PerCaretSearchData() {
         constructor(caretState: CaretState) : this() {
             this.history.add(caretState)
         }
@@ -161,7 +161,7 @@ class IncrementalSearchHandler {
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
     }
 
-    private class MyLabel constructor(text: String) : JLabel(text) {
+    private class MyLabel(text: String) : JLabel(text) {
         init {
             this.background = HintUtil.getInformationColor()
             this.foreground = JBColor.foreground()
@@ -169,7 +169,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    private class MyPanel constructor(private val myLeft: Component) : JPanel(BorderLayout()) {
+    private class MyPanel(private val myLeft: Component) : JPanel(BorderLayout()) {
 
         val truePreferredSize: Dimension
             get() = super.getPreferredSize()
@@ -181,7 +181,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    class MyTypedHandler constructor(originalHandler: TypedActionHandler?) : TypedActionHandlerBase(originalHandler) {
+    class MyTypedHandler(originalHandler: TypedActionHandler?) : TypedActionHandlerBase(originalHandler) {
 
         override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
@@ -196,7 +196,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    class BackSpaceHandler constructor(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class BackSpaceHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
@@ -216,7 +216,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    class UpHandler constructor(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class UpHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
@@ -230,7 +230,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    class DownHandler constructor(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class DownHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
@@ -244,7 +244,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    class EnterHandler constructor(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class EnterHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
