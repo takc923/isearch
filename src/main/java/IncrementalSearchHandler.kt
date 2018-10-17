@@ -224,9 +224,9 @@ class IncrementalSearchHandler {
             else editor.caretModel.runForEachCaret { searchBackwardNext(it, editor, hint) }
         }
 
-        override fun isEnabled(editor: Editor, dataContext: DataContext): Boolean {
+        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, dataContext)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
         }
     }
 
@@ -238,9 +238,9 @@ class IncrementalSearchHandler {
             else editor.caretModel.runForEachCaret { searchForwardNext(it, editor, hint) }
         }
 
-        override fun isEnabled(editor: Editor, dataContext: DataContext): Boolean {
+        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, dataContext)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
         }
     }
 
@@ -252,9 +252,9 @@ class IncrementalSearchHandler {
             else hint.hide()
         }
 
-        override fun isEnabled(editor: Editor, dataContext: DataContext): Boolean {
+        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, dataContext)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
         }
     }
 
