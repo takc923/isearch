@@ -192,7 +192,7 @@ class IncrementalSearchHandler {
             val comp = hint.component as MyPanel
             if (comp.truePreferredSize.width > comp.size.width) hint.pack()
 
-            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack, it.offset) }
+            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack, if (currentSearchBack) minOf(it.offset + hintData.label.text.length, editor.document.textLength) else it.offset) }
         }
     }
 
