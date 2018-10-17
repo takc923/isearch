@@ -91,7 +91,7 @@ class IncrementalSearchHandler {
         val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
         val dataHint = data.hint
         if (dataHint != null) {
-            return editor.caretModel.runForEachCaret { searchNext(it, editor, dataHint, searchBack) }
+            return editor.caretModel.runForEachCaret { updatePositionToNext(it, editor, dataHint, searchBack) }
         }
 
         val label1 = MyLabel(" " + CodeInsightBundle.message("incremental.search.tooltip.prefix"))
@@ -221,7 +221,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else editor.caretModel.runForEachCaret { searchNext(it, editor, hint, true) }
+            else editor.caretModel.runForEachCaret { updatePositionToNext(it, editor, hint, true) }
         }
 
         override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
@@ -235,7 +235,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else editor.caretModel.runForEachCaret { searchNext(it, editor, hint, false) }
+            else editor.caretModel.runForEachCaret { updatePositionToNext(it, editor, hint, false) }
         }
 
         override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
@@ -267,7 +267,7 @@ class IncrementalSearchHandler {
 
         private var currentSearchBack = false
 
-        private fun searchNext(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean) {
+        private fun updatePositionToNext(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             updatePosition(caret, editor, hintData, searchBack, true)
         }
