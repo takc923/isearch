@@ -281,7 +281,7 @@ class IncrementalSearchHandler {
             val end = minOf(text.length, maxOf(0, _end))
             return searcher.scan(text, start, end)
         }
-        
+
         private fun searchWhole(target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int =
                 search(if (searchBack) text.length else 0, target, text, searchBack, isNext)
 
@@ -290,11 +290,11 @@ class IncrementalSearchHandler {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             val target = hintData.label.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
             hintData.label.text = target
-            val searchResult = {
-                val result = search(caret.offset, target, editor.document.charsSequence, searchBack, isNext)
-                if (result < 0 && isNext) searchWhole(target, editor.document.charsSequence, searchBack, isNext)
-                else result
-            }()
+            val tmpResult = search(caret.offset, target, editor.document.charsSequence, searchBack, isNext)
+            val searchResult = when {
+                tmpResult < 0 && isNext -> searchWhole(target, editor.document.charsSequence, searchBack, isNext)
+                else -> tmpResult
+            }
 
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             val (color, matchLength, newOffset) = when {
