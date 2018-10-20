@@ -91,7 +91,7 @@ class IncrementalSearchHandler {
         val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
         val currentHint = data.hint
         if (currentHint != null) {
-            return editor.caretModel.runForEachCaret { updatePositionToNext(it, editor, currentHint, searchBack) }
+            return editor.caretModel.runForEachCaret { updatePosition(it, editor, currentHint, searchBack, true) }
         }
 
         val label1 = MyLabel(" " + CodeInsightBundle.message("incremental.search.tooltip.prefix"))
@@ -192,7 +192,7 @@ class IncrementalSearchHandler {
             val comp = hint.component as MyPanel
             if (comp.truePreferredSize.width > comp.size.width) hint.pack()
 
-            editor.caretModel.runForEachCaret { updatePosition(it, editor, hintData, currentSearchBack, false) }
+            editor.caretModel.runForEachCaret { updatePosition(it, editor, hint, currentSearchBack, false) }
         }
     }
 
@@ -221,7 +221,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else editor.caretModel.runForEachCaret { updatePositionToNext(it, editor, hint, true) }
+            else editor.caretModel.runForEachCaret { updatePosition(it, editor, hint, true, true) }
         }
 
         override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
@@ -235,7 +235,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else editor.caretModel.runForEachCaret { updatePositionToNext(it, editor, hint, false) }
+            else editor.caretModel.runForEachCaret { updatePosition(it, editor, hint, false, true) }
         }
 
         override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
@@ -267,11 +267,6 @@ class IncrementalSearchHandler {
 
         private var currentSearchBack = false
 
-        private fun updatePositionToNext(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean) {
-            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            updatePosition(caret, editor, hintData, searchBack, true)
-        }
-
         private fun search(caret: Caret, target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int {
             val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
             val diffForNext = if (isNext) 1 else 0
@@ -284,7 +279,8 @@ class IncrementalSearchHandler {
             return searcher.scan(text, start, end)
         }
 
-        private fun updatePosition(caret: Caret, editor: Editor, hintData: PerHintSearchData, searchBack: Boolean, isNext: Boolean) {
+        private fun updatePosition(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean, isNext: Boolean) {
+            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             val target = hintData.label.text
             // todo: search lastSearch
             if (target.isEmpty()) return
