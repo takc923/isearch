@@ -56,6 +56,7 @@ class IncrementalSearchHandler {
 
     private class PerEditorSearchData {
         internal var hint: LightweightHint? = null
+        internal var lastSearch = ""
     }
 
     private class PerCaretSearchData() {
@@ -139,6 +140,8 @@ class IncrementalSearchHandler {
                 }
 
                 val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
+                val hintData = editorData.hint?.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+                editorData.lastSearch = hintData.label.text
                 editorData.hint = null
                 document.removeDocumentListener(documentListener)
                 editor.caretModel.removeCaretListener(caretListener)
@@ -280,10 +283,10 @@ class IncrementalSearchHandler {
         }
 
         private fun updatePosition(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean, isNext: Boolean) {
+            val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            val target = hintData.label.text
-            // todo: search lastSearch
-            if (target.isEmpty()) return
+            val target = hintData.label.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
+            hintData.label.text = target
             val searchResult = search(caret, target, editor.document.charsSequence, searchBack, isNext)
 
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
@@ -291,9 +294,9 @@ class IncrementalSearchHandler {
                 searchResult < 0 -> Triple(JBColor.RED, caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
                 else -> Triple(JBColor.foreground(), target.length, searchResult)
             }
+            moveCaret(caretData, hintData, caret, newOffset, editor, matchLength)
 
             hintData.label.foreground = color
-            moveCaret(caretData, hintData, caret, newOffset, editor, matchLength)
             val latestCaretState = CaretState(caret.offset, matchLength, HintState(hintData.label.text, hintData.label.foreground))
             if (caretData.history.lastOrNull() == latestCaretState) return
             caretData.history.add(latestCaretState)
