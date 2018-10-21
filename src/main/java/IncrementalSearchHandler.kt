@@ -157,7 +157,7 @@ class IncrementalSearchHandler {
         val hintData = PerHintSearchData(project, label2, label1)
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
-        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData()) }
+        editor.caretModel.runForEachCaret { it.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData()) }
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
@@ -253,7 +253,7 @@ class IncrementalSearchHandler {
 
         private var currentSearchBack = false
 
-        data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean, val isUpdated: Boolean) {
+        data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean) {
             fun toLabel(): String = getLabel(searchBack, isWrapped, notFound)
             fun toColor(): Color = if (notFound) JBColor.RED else JBColor.foreground()
         }
@@ -293,9 +293,7 @@ class IncrementalSearchHandler {
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
 
-            if (isNext && results.asSequence().all { !it.isUpdated }) {
-                return popHistory(editor, hintData)
-            }
+            if (areCaretAndHintUpdated(editor, isNext)) return popHistory(editor, hintData)
 
             val result = if (searchBack) results.first() else results.last()
             hintData.labelTarget.text = target
@@ -304,6 +302,11 @@ class IncrementalSearchHandler {
             val comp = hint.component as MyPanel
             if (comp.truePreferredSize.width > comp.size.width) hint.pack()
         }
+
+        private fun areCaretAndHintUpdated(editor: Editor, isNext: Boolean): Boolean = editor.caretModel.allCarets.all { caret ->
+            val history = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!.history
+            history.takeLastWhile { it == history.lastOrNull() }.size >= 2
+        } && isNext
 
         private fun pushHistory(editor: Editor, hintData: PerHintSearchData, target: String, color: Color) {
             editor.caretModel.runForEachCaret {
@@ -339,9 +342,7 @@ class IncrementalSearchHandler {
                 else -> Pair(target.length, searchResult)
             }
             moveCaret(caretData, hintData, caret, newOffset, editor, matchLength)
-
-            val isUpdated = caretData.history.lastOrNull() != CaretState(caret.offset, matchLength)
-            return SearchResult(searchBack, tmpResult != searchResult, isNotFound, isUpdated)
+            return SearchResult(searchBack, tmpResult != searchResult, isNotFound)
         }
 
         private fun moveCaret(caretData: PerCaretSearchData, data: PerHintSearchData, caret: Caret, index: Int, editor: Editor, matchLength: Int) {
