@@ -60,7 +60,7 @@ class IncrementalSearchHandler {
         internal var lastSearch = ""
     }
 
-    private class PerCaretSearchData() {
+    private class PerCaretSearchData {
         internal var segmentHighlighter: RangeHighlighter? = null
         internal var history: List<CaretState> = listOf()
         internal var matchLength: Int = 0
