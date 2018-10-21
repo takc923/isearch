@@ -137,7 +137,7 @@ class IncrementalSearchHandler {
                 if (!isVisible) return
 
                 super.hide()
-                editor.caretModel.allCarets.forEach {
+                editor.caretModel.runForEachCaret {
                     val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
                     caretData?.segmentHighlighter?.dispose()
                     caretData?.segmentHighlighter = null
