@@ -49,7 +49,7 @@ import javax.swing.SwingUtilities
 
 class IncrementalSearchHandler {
 
-    private class PerHintSearchData(internal val project: Project, internal val label: JLabel, internal val labelTitle: JLabel) {
+    private class PerHintSearchData(internal val project: Project, internal val labelTarget: JLabel, internal val labelTitle: JLabel) {
         internal var ignoreCaretMove = false
         internal var history: List<HintState> = listOf()
     }
@@ -143,7 +143,7 @@ class IncrementalSearchHandler {
 
                 val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
                 val hintData = editorData.hint?.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-                editorData.lastSearch = hintData.label.text
+                editorData.lastSearch = hintData.labelTarget.text
                 editorData.hint = null
                 document.removeDocumentListener(documentListener)
                 editor.caretModel.removeCaretListener(caretListener)
@@ -193,7 +193,7 @@ class IncrementalSearchHandler {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler?.execute(editor, charTyped, dataContext) ?: Unit
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            hintData.label.text += charTyped
+            hintData.labelTarget.text += charTyped
 
             updatePositionAndHint(editor, hint, currentSearchBack, false)
         }
@@ -291,7 +291,7 @@ class IncrementalSearchHandler {
         private fun updatePositionAndHint(editor: Editor, hint: LightweightHint, searchBack: Boolean, isNext: Boolean) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
-            val target = hintData.label.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
+            val target = hintData.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
@@ -299,8 +299,8 @@ class IncrementalSearchHandler {
             if (isNext && results.asSequence().all { !it.isUpdated }) return // todo isNext
 
             val result = if (searchBack) results.first() else results.last()
-            hintData.label.text = target
-            hintData.label.foreground = result.toColor()
+            hintData.labelTarget.text = target
+            hintData.labelTarget.foreground = result.toColor()
             hintData.labelTitle.text = result.toLabel()
             pushHistory(editor, hintData, target, result.toColor())
             val comp = hint.component as MyPanel
@@ -319,8 +319,8 @@ class IncrementalSearchHandler {
             if (hintData.history.size <= 1) return
             hintData.history = hintData.history.dropLast(1)
             val hintState = hintData.history.last()
-            hintData.label.text = hintState.text
-            hintData.label.foreground = hintState.color
+            hintData.labelTarget.text = hintState.text
+            hintData.labelTarget.foreground = hintState.color
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 if (caretData.history.size <= 1) return
