@@ -66,7 +66,7 @@ class IncrementalSearchHandler {
     }
 
     private data class CaretState(internal val offset: Int, internal val matchLength: Int)
-    private data class HintState(internal val text: String, internal val color: Color)
+    private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
         currentSearchBack = searchBack
@@ -281,7 +281,7 @@ class IncrementalSearchHandler {
         private fun updatePositionAndHint(editor: Editor, hint: LightweightHint, searchBack: Boolean, charTyped: Char? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            pushHistory(editor, hintData, hintData.labelTarget.text, hintData.labelTarget.foreground)
+            pushHistory(editor, hintData, hintData.labelTarget.text, hintData.labelTarget.foreground, hintData.labelTitle.text)
 
             if (charTyped != null) hintData.labelTarget.text += charTyped
             val target = hintData.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
@@ -305,12 +305,12 @@ class IncrementalSearchHandler {
             history.takeLastWhile { it == history.lastOrNull() }.size >= 2
         } && isNext
 
-        private fun pushHistory(editor: Editor, hintData: PerHintSearchData, target: String, color: Color) {
+        private fun pushHistory(editor: Editor, hintData: PerHintSearchData, target: String, color: Color, title: String) {
             editor.caretModel.runForEachCaret {
                 val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
                 caretData.history += CaretState(it.offset, caretData.matchLength)
             }
-            hintData.history += HintState(target, color)
+             hintData.history += HintState(target, color, title)
         }
 
         private fun popHistory(editor: Editor, hintData: PerHintSearchData) {
@@ -318,6 +318,7 @@ class IncrementalSearchHandler {
             hintData.history = hintData.history.dropLast(1)
             hintData.labelTarget.text = hintState.text
             hintData.labelTarget.foreground = hintState.color
+            hintData.labelTitle.text = hintState.title
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 val caretState = caretData.history.lastOrNull() ?: return
