@@ -61,10 +61,6 @@ class IncrementalSearchHandler {
     }
 
     private class PerCaretSearchData() {
-        constructor(caretState: CaretState) : this() {
-            this.history += caretState
-        }
-
         internal var segmentHighlighter: RangeHighlighter? = null
         internal var history: List<CaretState> = listOf()
         internal var matchLength: Int = 0
@@ -165,9 +161,8 @@ class IncrementalSearchHandler {
         val hintData = PerHintSearchData(project, label2, label1)
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
-        // todo
-        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData(CaretState(it.offset, 0))) }
-        hintData.history += HintState("", JBColor.foreground())
+        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData()) }
+        pushHistory(editor, hintData, "", JBColor.foreground())
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
@@ -309,16 +304,16 @@ class IncrementalSearchHandler {
                 hintData.label.text = target
                 hintData.label.foreground = result.toColor()
                 hintData.labelTitle.text = result.toLabel()
-                pushHistory(editor, hintData, target, result)
+                pushHistory(editor, hintData, target, result.toColor())
             }
         }
 
-        private fun pushHistory(editor: Editor, hintData: PerHintSearchData, target: String, result: SearchResult) {
+        private fun pushHistory(editor: Editor, hintData: PerHintSearchData, target: String, color: Color) {
             editor.caretModel.runForEachCaret {
                 val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
                 caretData.history += CaretState(it.offset, caretData.matchLength)
             }
-            hintData.history += HintState(target, result.toColor())
+            hintData.history += HintState(target, color)
         }
 
         private fun popHistory(editor: Editor, hintData: PerHintSearchData) {
