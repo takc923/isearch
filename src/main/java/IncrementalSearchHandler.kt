@@ -88,15 +88,6 @@ class IncrementalSearchHandler {
         val currentHint = data.hint
         if (currentHint != null) return updatePositionAndHint(editor, currentHint, searchBack)
 
-        val label2: JLabel = MyLabel("")
-        val label1 = MyLabel(getLabel(searchBack, false, false))
-        label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
-
-        val panel = MyPanel(label1)
-        panel.add(label1, BorderLayout.WEST)
-        panel.add(label2, BorderLayout.CENTER)
-        panel.border = BorderFactory.createLineBorder(JBColor.black)
-
         val documentListener = object : DocumentListener {
             override fun documentChanged(e: DocumentEvent?) {
                 editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
@@ -124,6 +115,14 @@ class IncrementalSearchHandler {
         }
         editor.caretModel.addCaretListener(caretListener)
 
+        val label2: JLabel = MyLabel("")
+        val label1 = MyLabel(getLabel(searchBack, false, false))
+        label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
+
+        val panel = MyPanel(label1)
+        panel.add(label1, BorderLayout.WEST)
+        panel.add(label2, BorderLayout.CENTER)
+        panel.border = BorderFactory.createLineBorder(JBColor.black)
         val hint = object : LightweightHint(panel) {
             override fun hide() {
                 if (!isVisible) return
