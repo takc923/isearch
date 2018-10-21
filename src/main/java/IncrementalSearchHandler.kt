@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.codeInsight.hint.HintManagerImpl
 import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.codeInsight.template.impl.editorActions.TypedActionHandlerBase
@@ -93,7 +92,7 @@ class IncrementalSearchHandler {
             return updatePositionAndHint(editor, currentHint, searchBack, true)
         }
 
-        val label1 = MyLabel(" " + CodeInsightBundle.message("incremental.search.tooltip.prefix"))
+        val label1 = MyLabel(" I-search" + (if (currentSearchBack) " Backward" else "") + " :")
         label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
 
         val panel = MyPanel(label1)
