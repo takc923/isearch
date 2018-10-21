@@ -52,6 +52,12 @@ class IncrementalSearchHandler {
     private class PerHintSearchData(internal val project: Project, internal val labelTarget: JLabel, internal val labelTitle: JLabel) {
         internal var ignoreCaretMove = false
         internal var history: List<HintState> = listOf()
+        fun updateHint(target: String, color: Color, title: String) {
+            this.labelTarget.text = target
+            this.labelTarget.foreground = color
+            this.labelTitle.text = title
+        }
+
     }
 
     private class PerEditorSearchData {
@@ -293,9 +299,7 @@ class IncrementalSearchHandler {
             if (areCaretAndHintUpdated(editor, isNext)) return popHistory(editor, hintData)
 
             val result = if (searchBack) results.first() else results.last()
-            hintData.labelTarget.text = target
-            hintData.labelTarget.foreground = result.toColor()
-            hintData.labelTitle.text = result.toLabel()
+            hintData.updateHint(target, result.toColor(), result.toLabel())
             val comp = hint.component as MyPanel
             if (comp.truePreferredSize.width > comp.size.width) hint.pack()
         }
@@ -310,15 +314,13 @@ class IncrementalSearchHandler {
                 val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
                 caretData.history += CaretState(it.offset, caretData.matchLength)
             }
-             hintData.history += HintState(target, color, title)
+            hintData.history += HintState(target, color, title)
         }
 
         private fun popHistory(editor: Editor, hintData: PerHintSearchData) {
             val hintState = hintData.history.lastOrNull() ?: return
             hintData.history = hintData.history.dropLast(1)
-            hintData.labelTarget.text = hintState.text
-            hintData.labelTarget.foreground = hintState.color
-            hintData.labelTitle.text = hintState.title
+            hintData.updateHint(hintState.text, hintState.color, hintState.title)
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 val caretState = caretData.history.lastOrNull() ?: return
