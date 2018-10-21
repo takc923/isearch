@@ -92,7 +92,7 @@ class IncrementalSearchHandler {
             return updatePositionAndHint(editor, currentHint, searchBack, true)
         }
 
-        val label1 = MyLabel(" I-search" + (if (currentSearchBack) " Backward" else "") + " :")
+        val label1 = MyLabel(getLabel(searchBack, false, false))
         label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
 
         val panel = MyPanel(label1)
@@ -261,15 +261,16 @@ class IncrementalSearchHandler {
         private var currentSearchBack = false
 
         data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean, val isUpdated: Boolean) {
-            fun toLabel(): String = sequenceOf(
-                    if (notFound) "Failing" else null,
-                    if (isWrapped) "Wrapped" else null,
-                    "I-search",
-                    if (searchBack) "Backward" else null
-            ).filterNotNull().joinToString(" ") + ": "
-
+            fun toLabel(): String = getLabel(searchBack, isWrapped, notFound)
             fun toColor(): Color = if (notFound) JBColor.RED else JBColor.foreground()
         }
+
+        private fun getLabel(searchBack: Boolean, isWrapped: Boolean, notFound: Boolean): String = sequenceOf(
+                if (notFound) "Failing" else null,
+                if (isWrapped) "Wrapped" else null,
+                "I-search",
+                if (searchBack) "Backward" else null
+        ).filterNotNull().joinToString(" ") + ": "
 
         private fun search(currentOffset: Int, target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int {
             val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
