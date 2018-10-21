@@ -296,16 +296,15 @@ class IncrementalSearchHandler {
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
 
-            if (results.asSequence().any { it.isUpdated } || !isNext) { // todo isNext
-                val result = if (searchBack) results.first() else results.last()
+            if (isNext && results.asSequence().all { !it.isUpdated }) return // todo isNext
 
-                hintData.label.text = target
-                hintData.label.foreground = result.toColor()
-                hintData.labelTitle.text = result.toLabel()
-                pushHistory(editor, hintData, target, result.toColor())
-                val comp = hint.component as MyPanel
-                if (comp.truePreferredSize.width > comp.size.width) hint.pack()
-            }
+            val result = if (searchBack) results.first() else results.last()
+            hintData.label.text = target
+            hintData.label.foreground = result.toColor()
+            hintData.labelTitle.text = result.toLabel()
+            pushHistory(editor, hintData, target, result.toColor())
+            val comp = hint.component as MyPanel
+            if (comp.truePreferredSize.width > comp.size.width) hint.pack()
         }
 
         private fun pushHistory(editor: Editor, hintData: PerHintSearchData, target: String, color: Color) {
