@@ -97,14 +97,12 @@ class IncrementalSearchHandler {
         panel.add(label2, BorderLayout.CENTER)
         panel.border = BorderFactory.createLineBorder(JBColor.black)
 
-        val document = editor.document
-
         val documentListener = object : DocumentListener {
             override fun documentChanged(e: DocumentEvent?) {
                 editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
             }
         }
-        document.addDocumentListener(documentListener)
+        editor.document.addDocumentListener(documentListener)
 
         val caretListener = object : CaretListener {
             override fun caretPositionChanged(e: CaretEvent?) {
@@ -142,7 +140,7 @@ class IncrementalSearchHandler {
                 val hintData = editorData.hint?.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
                 editorData.lastSearch = hintData.labelTarget.text
                 editorData.hint = null
-                document.removeDocumentListener(documentListener)
+                editor.document.removeDocumentListener(documentListener)
                 editor.caretModel.removeCaretListener(caretListener)
             }
         }
