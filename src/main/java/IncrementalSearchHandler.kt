@@ -161,7 +161,6 @@ class IncrementalSearchHandler {
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
         editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData()) }
-        pushHistory(editor, hintData, "", JBColor.foreground())
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
@@ -191,11 +190,8 @@ class IncrementalSearchHandler {
 
         override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
-            hint ?: return myOriginalHandler?.execute(editor, charTyped, dataContext) ?: Unit
-            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            hintData.labelTarget.text += charTyped
-
-            updatePositionAndHint(editor, hint, currentSearchBack, false)
+            if (hint == null) myOriginalHandler?.execute(editor, charTyped, dataContext)
+            else updatePositionAndHint(editor, hint, currentSearchBack, false, charTyped)
         }
     }
 
@@ -288,21 +284,25 @@ class IncrementalSearchHandler {
         private fun searchWhole(target: String, text: CharSequence, searchBack: Boolean): Int =
                 search(if (searchBack) text.lastIndex else 0, target, text, searchBack, false)
 
-        private fun updatePositionAndHint(editor: Editor, hint: LightweightHint, searchBack: Boolean, isNext: Boolean) {
-            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+        private fun updatePositionAndHint(editor: Editor, hint: LightweightHint, searchBack: Boolean, isNext: Boolean, charTyped: Char? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
+            val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+            pushHistory(editor, hintData, hintData.labelTarget.text, hintData.labelTarget.foreground)
+
+            if (charTyped != null) hintData.labelTarget.text += charTyped
             val target = hintData.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
 
-            if (isNext && results.asSequence().all { !it.isUpdated }) return
+            if (isNext && results.asSequence().all { !it.isUpdated }) {
+                return popHistory(editor, hintData)
+            }
 
             val result = if (searchBack) results.first() else results.last()
             hintData.labelTarget.text = target
             hintData.labelTarget.foreground = result.toColor()
             hintData.labelTitle.text = result.toLabel()
-            pushHistory(editor, hintData, target, result.toColor())
             val comp = hint.component as MyPanel
             if (comp.truePreferredSize.width > comp.size.width) hint.pack()
         }
@@ -316,16 +316,15 @@ class IncrementalSearchHandler {
         }
 
         private fun popHistory(editor: Editor, hintData: PerHintSearchData) {
-            if (hintData.history.size <= 1) return
+            val hintState = hintData.history.lastOrNull() ?: return
             hintData.history = hintData.history.dropLast(1)
-            val hintState = hintData.history.last()
             hintData.labelTarget.text = hintState.text
             hintData.labelTarget.foreground = hintState.color
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
-                if (caretData.history.size <= 1) return
+                val caretState = caretData.history.lastOrNull() ?: return
                 caretData.history = caretData.history.dropLast(1)
-                val caretState = caretData.history.last()
+                caretData.matchLength = caretState.matchLength
                 moveCaret(caretData, hintData, caret, caretState.offset, editor, caretState.matchLength)
             })
         }
