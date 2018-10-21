@@ -196,8 +196,6 @@ class IncrementalSearchHandler {
             hintData.label.text += charTyped
 
             updatePositionAndHint(editor, hint, currentSearchBack, false)
-            val comp = hint.component as MyPanel
-            if (comp.truePreferredSize.width > comp.size.width) hint.pack()
         }
     }
 
@@ -305,6 +303,8 @@ class IncrementalSearchHandler {
                 hintData.label.foreground = result.toColor()
                 hintData.labelTitle.text = result.toLabel()
                 pushHistory(editor, hintData, target, result.toColor())
+                val comp = hint.component as MyPanel
+                if (comp.truePreferredSize.width > comp.size.width) hint.pack()
             }
         }
 
