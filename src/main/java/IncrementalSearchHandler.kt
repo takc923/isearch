@@ -195,10 +195,9 @@ class IncrementalSearchHandler {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             hintData.label.text += charTyped
 
+            updatePositionAndHint(editor, hint, currentSearchBack, false)
             val comp = hint.component as MyPanel
             if (comp.truePreferredSize.width > comp.size.width) hint.pack()
-
-            updatePositionAndHint(editor, hint, currentSearchBack, false)
         }
     }
 
