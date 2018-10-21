@@ -285,10 +285,10 @@ class IncrementalSearchHandler {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             pushHistory(editor, hintData, hintData.labelTarget.text, hintData.labelTarget.foreground)
-            val isNext = charTyped == null
 
             if (charTyped != null) hintData.labelTarget.text += charTyped
             val target = hintData.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
+            val isNext = charTyped == null && hintData.labelTarget.text.isNotEmpty() // search from current offset if using lastSearch
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
