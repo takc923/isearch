@@ -324,7 +324,6 @@ class IncrementalSearchHandler {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 val caretState = caretData.history.lastOrNull() ?: return
                 caretData.history = caretData.history.dropLast(1)
-                caretData.matchLength = caretState.matchLength
                 moveCaret(caretData, hintData, caret, caretState.offset, editor, caretState.matchLength)
             })
         }
@@ -344,7 +343,6 @@ class IncrementalSearchHandler {
             moveCaret(caretData, hintData, caret, newOffset, editor, matchLength)
 
             val isUpdated = caretData.history.lastOrNull() != CaretState(caret.offset, matchLength)
-            caretData.matchLength = matchLength // FIXME
             return SearchResult(searchBack, tmpResult != searchResult, isNotFound, isUpdated)
         }
 
@@ -362,6 +360,7 @@ class IncrementalSearchHandler {
 
         private fun addHighlight(editor: Editor, caretData: PerCaretSearchData, index: Int, matchLength: Int) {
             val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
+            caretData.matchLength = matchLength
             caretData.segmentHighlighter = editor.markupModel
                     .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
         }
