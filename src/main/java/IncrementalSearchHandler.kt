@@ -84,12 +84,11 @@ class IncrementalSearchHandler {
             ourActionsRegistered = true
         }
 
-        val label2: JLabel = MyLabel("")
-
         val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
         val currentHint = data.hint
         if (currentHint != null) return updatePositionAndHint(editor, currentHint, searchBack)
 
+        val label2: JLabel = MyLabel("")
         val label1 = MyLabel(getLabel(searchBack, false, false))
         label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
 
