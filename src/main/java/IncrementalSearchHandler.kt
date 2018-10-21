@@ -122,6 +122,10 @@ class IncrementalSearchHandler {
                 hint.hide()
             }
 
+            override fun caretAdded(e: CaretEvent?) {
+                editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
+            }
+
             override fun caretRemoved(e: CaretEvent?) {
                 val caretData = e?.caret?.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 caretData.segmentHighlighter?.dispose()
@@ -135,7 +139,7 @@ class IncrementalSearchHandler {
                 if (!isVisible) return
 
                 super.hide()
-                editor.caretModel.allCarets.forEach {
+                editor.caretModel.runForEachCaret {
                     val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
                     caretData?.segmentHighlighter?.dispose()
                     caretData?.segmentHighlighter = null
