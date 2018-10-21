@@ -52,7 +52,7 @@ class IncrementalSearchHandler {
 
     private class PerHintSearchData(internal val project: Project, internal val label: JLabel, internal val labelTitle: JLabel) {
         internal var ignoreCaretMove = false
-        internal val history: MutableList<HintState> = mutableListOf()
+        internal var history: List<HintState> = listOf()
     }
 
     private class PerEditorSearchData {
@@ -62,11 +62,11 @@ class IncrementalSearchHandler {
 
     private class PerCaretSearchData() {
         constructor(caretState: CaretState) : this() {
-            this.history.add(caretState)
+            this.history += caretState
         }
 
         internal var segmentHighlighter: RangeHighlighter? = null
-        internal val history: MutableList<CaretState> = mutableListOf()
+        internal var history: List<CaretState> = listOf()
         internal var matchLength: Int = 0
     }
 
@@ -164,8 +164,9 @@ class IncrementalSearchHandler {
         val hintData = PerHintSearchData(project, label2, label1)
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
+        // todo
         editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData(CaretState(it.offset, 0))) }
-        hintData.history.add(HintState("", JBColor.foreground()))
+        hintData.history += HintState("", JBColor.foreground())
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
@@ -314,21 +315,21 @@ class IncrementalSearchHandler {
         private fun pushHistory(editor: Editor, hintData: PerHintSearchData, target: String, result: SearchResult) {
             editor.caretModel.runForEachCaret {
                 val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
-                caretData.history.add(CaretState(it.offset, caretData.matchLength))
+                caretData.history += CaretState(it.offset, caretData.matchLength)
             }
-            hintData.history.add(HintState(target, result.toColor()))
+            hintData.history += HintState(target, result.toColor())
         }
 
         private fun popHistory(editor: Editor, hintData: PerHintSearchData) {
             if (hintData.history.size <= 1) return
-            hintData.history.removeAt(hintData.history.lastIndex)
+            hintData.history = hintData.history.dropLast(1)
             val hintState = hintData.history.last()
             hintData.label.text = hintState.text
             hintData.label.foreground = hintState.color
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 if (caretData.history.size <= 1) return
-                caretData.history.removeAt(caretData.history.lastIndex)
+                caretData.history = caretData.history.dropLast(1)
                 val caretState = caretData.history.last()
                 moveCaret(caretData, hintData, caret, caretState.offset, editor, caretState.matchLength)
             })
