@@ -265,9 +265,8 @@ class IncrementalSearchHandler {
                     if (notFound) "Failing" else null,
                     if (isWrapped) "Wrapped" else null,
                     "I-search",
-                    if (searchBack) "Backward" else null,
-                    ": "
-            ).filterNotNull().joinToString(" ")
+                    if (searchBack) "Backward" else null
+            ).filterNotNull().joinToString(" ") + ": "
 
             fun toColor(): Color = if (notFound) JBColor.RED else JBColor.foreground()
         }
