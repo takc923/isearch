@@ -281,8 +281,9 @@ class IncrementalSearchHandler {
                 searchBack -> Pair(0, currentOffset + target.lastIndex - diffForNext)
                 else -> Pair(currentOffset + diffForNext, text.length)
             }
-            val start = minOf(text.length, maxOf(0, _start))
-            val end = minOf(text.length, maxOf(0, _end))
+            val max = if (searchBack) text.lastIndex else text.length
+            val start = minOf(max, maxOf(0, _start))
+            val end = minOf(max, maxOf(0, _end))
             return searcher.scan(text, start, end)
         }
 
