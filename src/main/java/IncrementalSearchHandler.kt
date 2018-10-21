@@ -337,16 +337,16 @@ class IncrementalSearchHandler {
                 tmpResult < 0 && isNext -> searchWhole(target, editor.document.charsSequence, searchBack)
                 else -> tmpResult
             }
-
+            val isNotFound = searchResult < 0
             val (matchLength, newOffset) = when {
-                searchResult < 0 -> Pair(caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
+                isNotFound -> Pair(caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
                 else -> Pair(target.length, searchResult)
             }
             moveCaret(caretData, hintData, caret, newOffset, editor, matchLength)
 
             val isUpdated = caretData.history.lastOrNull() != CaretState(caret.offset, matchLength)
             caretData.matchLength = matchLength // FIXME
-            return SearchResult(searchBack, tmpResult != searchResult, searchResult < 0, isUpdated)
+            return SearchResult(searchBack, tmpResult != searchResult, isNotFound, isUpdated)
         }
 
         private fun moveCaret(caretData: PerCaretSearchData, data: PerHintSearchData, caret: Caret, index: Int, editor: Editor, matchLength: Int) {
