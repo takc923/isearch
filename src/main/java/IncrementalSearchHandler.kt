@@ -296,7 +296,7 @@ class IncrementalSearchHandler {
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
 
-            if (isNext && results.asSequence().all { !it.isUpdated }) return // todo isNext
+            if (isNext && results.asSequence().all { !it.isUpdated }) return
 
             val result = if (searchBack) results.first() else results.last()
             hintData.labelTarget.text = target
