@@ -332,7 +332,6 @@ class IncrementalSearchHandler {
         }
 
         private fun updatePosition(target: String, caret: Caret, editor: Editor, hintData: PerHintSearchData, searchBack: Boolean, isNext: Boolean): SearchResult {
-            // FIXME
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
             val tmpResult = search(caret.offset, target, editor.document.charsSequence, searchBack, isNext)
             val searchResult = when {
