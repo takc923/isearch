@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.intellij.codeInsight.CodeInsightBundle
 import com.intellij.codeInsight.hint.HintManagerImpl
 import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.codeInsight.template.impl.editorActions.TypedActionHandlerBase
@@ -50,8 +49,9 @@ import javax.swing.SwingUtilities
 
 class IncrementalSearchHandler {
 
-    private class PerHintSearchData(internal val project: Project, internal val label: JLabel) {
+    private class PerHintSearchData(internal val project: Project, internal val label: JLabel, internal val labelTitle: JLabel) {
         internal var ignoreCaretMove = false
+        internal var history: List<HintState> = listOf()
     }
 
     private class PerEditorSearchData {
@@ -59,16 +59,13 @@ class IncrementalSearchHandler {
         internal var lastSearch = ""
     }
 
-    private class PerCaretSearchData() {
-        constructor(caretState: CaretState) : this() {
-            this.history.add(caretState)
-        }
-
+    private class PerCaretSearchData {
         internal var segmentHighlighter: RangeHighlighter? = null
-        internal val history: MutableList<CaretState> = mutableListOf()
+        internal var history: List<CaretState> = listOf()
+        internal var matchLength: Int = 0
     }
 
-    private data class CaretState(internal val offset: Int, internal val matchLength: Int, internal val hintState: HintState)
+    private data class CaretState(internal val offset: Int, internal val matchLength: Int)
     private data class HintState(internal val text: String, internal val color: Color)
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
@@ -92,10 +89,10 @@ class IncrementalSearchHandler {
         val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
         val currentHint = data.hint
         if (currentHint != null) {
-            return editor.caretModel.runForEachCaret { updatePosition(it, editor, currentHint, searchBack, true) }
+            return updatePositionAndHint(editor, currentHint, searchBack, true)
         }
 
-        val label1 = MyLabel(" " + CodeInsightBundle.message("incremental.search.tooltip.prefix"))
+        val label1 = MyLabel(" I-search" + (if (currentSearchBack) " Backward" else "") + " :")
         label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
 
         val panel = MyPanel(label1)
@@ -137,7 +134,8 @@ class IncrementalSearchHandler {
                 if (!isVisible) return
 
                 super.hide()
-                editor.caretModel.runForEachCaret {
+                // Recursive runForEachCaret invocations are not allowed. So now using allCarets.forEach
+                editor.caretModel.allCarets.forEach {
                     val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
                     caretData?.segmentHighlighter?.dispose()
                     caretData?.segmentHighlighter = null
@@ -159,10 +157,11 @@ class IncrementalSearchHandler {
 
         HintManagerImpl.getInstanceImpl().showEditorHint(hint, editor, p, HintManagerImpl.HIDE_BY_ESCAPE or HintManagerImpl.HIDE_BY_TEXT_CHANGE, 0, false, HintHint(editor, p).setAwtTooltip(false))
 
-        val hintData = PerHintSearchData(project, label2)
+        val hintData = PerHintSearchData(project, label2, label1)
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
-        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData(CaretState(it.offset, 0, HintState("", JBColor.foreground())))) }
+        editor.caretModel.runForEachCaret { it?.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData()) }
+        pushHistory(editor, hintData, "", JBColor.foreground())
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
@@ -196,10 +195,9 @@ class IncrementalSearchHandler {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             hintData.label.text += charTyped
 
+            updatePositionAndHint(editor, hint, currentSearchBack, false)
             val comp = hint.component as MyPanel
             if (comp.truePreferredSize.width > comp.size.width) hint.pack()
-
-            editor.caretModel.runForEachCaret { updatePosition(it, editor, hint, currentSearchBack, false) }
         }
     }
 
@@ -209,17 +207,7 @@ class IncrementalSearchHandler {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            editor.caretModel.runForEachCaret(fun(caret: Caret) {
-                val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
-                if (caretData.history.size <= 1) return
-                caretData.history.removeAt(caretData.history.lastIndex)
-                val lastState = caretData.history.last()
-
-                hintData.label.text = lastState.hintState.text
-                hintData.label.foreground = lastState.hintState.color
-
-                moveCaret(caretData, hintData, caret, lastState.offset, editor, lastState.matchLength)
-            })
+            popHistory(editor, hintData)
         }
     }
 
@@ -228,7 +216,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else editor.caretModel.runForEachCaret { updatePosition(it, editor, hint, true, true) }
+            else updatePositionAndHint(editor, hint, true, true)
         }
 
         override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
@@ -242,7 +230,7 @@ class IncrementalSearchHandler {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else editor.caretModel.runForEachCaret { updatePosition(it, editor, hint, false, true) }
+            else updatePositionAndHint(editor, hint, false, true)
         }
 
         override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
@@ -274,6 +262,18 @@ class IncrementalSearchHandler {
 
         private var currentSearchBack = false
 
+        data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean, val isUpdated: Boolean) {
+            fun toLabel(): String = sequenceOf(
+                    if (notFound) "Failing" else null,
+                    if (isWrapped) "Wrapped" else null,
+                    "I-search",
+                    if (searchBack) "Backward" else null,
+                    ": "
+            ).filterNotNull().joinToString(" ")
+
+            fun toColor(): Color = if (notFound) JBColor.RED else JBColor.foreground()
+        }
+
         private fun search(currentOffset: Int, target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int {
             val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
             val diffForNext = if (isNext) 1 else 0
@@ -281,36 +281,73 @@ class IncrementalSearchHandler {
                 searchBack -> Pair(0, currentOffset + target.lastIndex - diffForNext)
                 else -> Pair(currentOffset + diffForNext, text.length)
             }
-            val start = minOf(text.length, maxOf(0, _start))
-            val end = minOf(text.length, maxOf(0, _end))
+            val max = if (searchBack) text.lastIndex else text.length
+            val start = minOf(max, maxOf(0, _start))
+            val end = minOf(max, maxOf(0, _end))
             return searcher.scan(text, start, end)
         }
 
-        private fun searchWhole(target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int =
-                search(if (searchBack) text.length else 0, target, text, searchBack, isNext)
+        private fun searchWhole(target: String, text: CharSequence, searchBack: Boolean): Int =
+                search(if (searchBack) text.lastIndex else 0, target, text, searchBack, false)
 
-        private fun updatePosition(caret: Caret, editor: Editor, hint: LightweightHint, searchBack: Boolean, isNext: Boolean) {
-            val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
+        private fun updatePositionAndHint(editor: Editor, hint: LightweightHint, searchBack: Boolean, isNext: Boolean) {
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+            val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
             val target = hintData.label.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
-            hintData.label.text = target
+
+            val results = mutableListOf<SearchResult>()
+            editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
+
+            if (results.asSequence().any { it.isUpdated } || !isNext) { // todo isNext
+                val result = if (searchBack) results.first() else results.last()
+
+                hintData.label.text = target
+                hintData.label.foreground = result.toColor()
+                hintData.labelTitle.text = result.toLabel()
+                pushHistory(editor, hintData, target, result.toColor())
+            }
+        }
+
+        private fun pushHistory(editor: Editor, hintData: PerHintSearchData, target: String, color: Color) {
+            editor.caretModel.runForEachCaret {
+                val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
+                caretData.history += CaretState(it.offset, caretData.matchLength)
+            }
+            hintData.history += HintState(target, color)
+        }
+
+        private fun popHistory(editor: Editor, hintData: PerHintSearchData) {
+            if (hintData.history.size <= 1) return
+            hintData.history = hintData.history.dropLast(1)
+            val hintState = hintData.history.last()
+            hintData.label.text = hintState.text
+            hintData.label.foreground = hintState.color
+            editor.caretModel.runForEachCaret(fun(caret: Caret) {
+                val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
+                if (caretData.history.size <= 1) return
+                caretData.history = caretData.history.dropLast(1)
+                val caretState = caretData.history.last()
+                moveCaret(caretData, hintData, caret, caretState.offset, editor, caretState.matchLength)
+            })
+        }
+
+        private fun updatePosition(target: String, caret: Caret, editor: Editor, hintData: PerHintSearchData, searchBack: Boolean, isNext: Boolean): SearchResult {
+            val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
             val tmpResult = search(caret.offset, target, editor.document.charsSequence, searchBack, isNext)
             val searchResult = when {
-                tmpResult < 0 && isNext -> searchWhole(target, editor.document.charsSequence, searchBack, isNext)
+                tmpResult < 0 && isNext -> searchWhole(target, editor.document.charsSequence, searchBack)
                 else -> tmpResult
             }
 
-            val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
-            val (color, matchLength, newOffset) = when {
-                searchResult < 0 -> Triple(JBColor.RED, caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
-                else -> Triple(JBColor.foreground(), target.length, searchResult)
+            val (matchLength, newOffset) = when {
+                searchResult < 0 -> Pair(caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
+                else -> Pair(target.length, searchResult)
             }
             moveCaret(caretData, hintData, caret, newOffset, editor, matchLength)
 
-            hintData.label.foreground = color
-            val latestCaretState = CaretState(caret.offset, matchLength, HintState(hintData.label.text, hintData.label.foreground))
-            if (caretData.history.lastOrNull() == latestCaretState) return
-            caretData.history.add(latestCaretState)
+            val isUpdated = caretData.history.lastOrNull() != CaretState(caret.offset, matchLength)
+            caretData.matchLength = matchLength // FIXME
+            return SearchResult(searchBack, tmpResult != searchResult, searchResult < 0, isUpdated)
         }
 
         private fun moveCaret(caretData: PerCaretSearchData, data: PerHintSearchData, caret: Caret, index: Int, editor: Editor, matchLength: Int) {
