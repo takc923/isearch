@@ -338,7 +338,7 @@ class IncrementalSearchHandler {
             }
             val isNotFound = searchResult < 0
             val (matchLength, newOffset) = when {
-                isNotFound -> Pair(caretData.history.lastOrNull()?.matchLength ?: 0, caret.offset)
+                isNotFound -> Pair(caretData.matchLength, caret.offset)
                 else -> Pair(target.length, searchResult)
             }
             moveCaret(caretData, hintData, caret, newOffset, editor, matchLength)
