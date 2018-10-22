@@ -49,7 +49,7 @@ import javax.swing.SwingUtilities
 
 class IncrementalSearchHandler {
 
-    private class PerHintSearchData(internal val project: Project, internal val labelTarget: JLabel, internal val labelTitle: JLabel) {
+    private class PerHintSearchData(internal val project: Project) {
         internal var ignoreCaretMove = false
         internal var history: List<HintState> = listOf()
     }
@@ -116,7 +116,7 @@ class IncrementalSearchHandler {
         }
         editor.caretModel.addCaretListener(caretListener)
 
-        val label2: JLabel = MyLabel("")
+        val label2 = MyLabel("")
         val label1 = MyLabel(getLabel(searchBack, false, false))
         label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
 
@@ -124,7 +124,7 @@ class IncrementalSearchHandler {
         panel.add(label1, BorderLayout.WEST)
         panel.add(label2, BorderLayout.CENTER)
         panel.border = BorderFactory.createLineBorder(JBColor.black)
-        val hint = MyHint(panel, editor, documentListener, caretListener)
+        val hint = MyHint(panel, label1, label2, editor, documentListener, caretListener)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
@@ -133,7 +133,7 @@ class IncrementalSearchHandler {
 
         HintManagerImpl.getInstanceImpl().showEditorHint(hint, editor, p, HintManagerImpl.HIDE_BY_ESCAPE or HintManagerImpl.HIDE_BY_TEXT_CHANGE, 0, false, HintHint(editor, p).setAwtTooltip(false))
 
-        val hintData = PerHintSearchData(project, label2, label1)
+        val hintData = PerHintSearchData(project)
         hint.putUserData(SEARCH_DATA_IN_HINT_KEY, hintData)
 
         editor.caretModel.runForEachCaret { it.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData()) }
@@ -142,7 +142,7 @@ class IncrementalSearchHandler {
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
     }
 
-    private class MyHint(myPanel: MyPanel, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener) : LightweightHint(myPanel) {
+    private class MyHint(myPanel: MyPanel, val labelTitle: MyLabel, val labelTarget: MyLabel, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener) : LightweightHint(myPanel) {
         fun update(targetText: String, color: Color, titleText: String) {
             val comp = this.component as MyPanel
             val title = comp.getComponent(0) as MyLabel
@@ -165,8 +165,8 @@ class IncrementalSearchHandler {
             }
 
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
-            val hintData = editorData.hint?.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            editorData.lastSearch = hintData.labelTarget.text
+            val hint = editorData.hint ?: return
+            editorData.lastSearch = hint.labelTarget.text
             editorData.hint = null
             editor.document.removeDocumentListener(documentListener)
             editor.caretModel.removeCaretListener(caretListener)
@@ -289,11 +289,11 @@ class IncrementalSearchHandler {
         private fun updatePositionAndHint(editor: Editor, hint: MyHint, searchBack: Boolean, charTyped: Char? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            pushHistory(editor, hintData, hintData.labelTarget.text, hintData.labelTarget.foreground, hintData.labelTitle.text)
+            pushHistory(editor, hintData, hint.labelTarget.text, hint.labelTarget.foreground, hint.labelTitle.text)
 
-            if (charTyped != null) hintData.labelTarget.text += charTyped
-            val target = hintData.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
-            val isNext = charTyped == null && hintData.labelTarget.text.isNotEmpty() // search from current offset if using lastSearch
+            if (charTyped != null) hint.labelTarget.text += charTyped
+            val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
+            val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() // search from current offset if using lastSearch
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
