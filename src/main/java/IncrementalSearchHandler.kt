@@ -52,12 +52,6 @@ class IncrementalSearchHandler {
     private class PerHintSearchData(internal val project: Project, internal val labelTarget: JLabel, internal val labelTitle: JLabel) {
         internal var ignoreCaretMove = false
         internal var history: List<HintState> = listOf()
-        fun updateHint(target: String, color: Color, title: String) {
-            this.labelTarget.text = target
-            this.labelTarget.foreground = color
-            this.labelTitle.text = title
-        }
-
     }
 
     private class PerEditorSearchData {
@@ -126,30 +120,11 @@ class IncrementalSearchHandler {
         val label1 = MyLabel(getLabel(searchBack, false, false))
         label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
 
-        val panel = MyPanel(label1)
+        val panel = MyPanel()
         panel.add(label1, BorderLayout.WEST)
         panel.add(label2, BorderLayout.CENTER)
         panel.border = BorderFactory.createLineBorder(JBColor.black)
-        val hint = object : LightweightHint(panel) {
-            override fun hide() {
-                if (!isVisible) return
-
-                super.hide()
-                // Recursive runForEachCaret invocations are not allowed. So now using allCarets.forEach
-                editor.caretModel.allCarets.forEach {
-                    val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
-                    caretData?.segmentHighlighter?.dispose()
-                    caretData?.segmentHighlighter = null
-                }
-
-                val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
-                val hintData = editorData.hint?.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-                editorData.lastSearch = hintData.labelTarget.text
-                editorData.hint = null
-                editor.document.removeDocumentListener(documentListener)
-                editor.caretModel.removeCaretListener(caretListener)
-            }
-        }
+        val hint = MyHint(panel, editor, documentListener, caretListener)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
@@ -167,6 +142,37 @@ class IncrementalSearchHandler {
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
     }
 
+    private class MyHint(myPanel: MyPanel, val editor: Editor, val documentListener: DocumentListener, val caretListener: CaretListener) : LightweightHint(myPanel) {
+        fun update(targetText: String, color: Color, titleText: String) {
+            val comp = this.component as MyPanel
+            val title = comp.getComponent(0) as MyLabel
+            val target = comp.getComponent(1) as MyLabel
+            title.text = titleText
+            target.text = targetText
+            target.foreground = color
+            this.pack()
+        }
+
+        override fun hide() {
+            if (!isVisible) return
+
+            super.hide()
+            // Recursive runForEachCaret invocations are not allowed. So now using allCarets.forEach
+            editor.caretModel.allCarets.forEach {
+                val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
+                caretData?.segmentHighlighter?.dispose()
+                caretData?.segmentHighlighter = null
+            }
+
+            val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
+            val hintData = editorData.hint?.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
+            editorData.lastSearch = hintData.labelTarget.text
+            editorData.hint = null
+            editor.document.removeDocumentListener(documentListener)
+            editor.caretModel.removeCaretListener(caretListener)
+        }
+    }
+
     private class MyLabel(text: String) : JLabel(text) {
         init {
             this.background = HintUtil.getInformationColor()
@@ -175,15 +181,10 @@ class IncrementalSearchHandler {
         }
     }
 
-    private class MyPanel(private val myLeft: Component) : JPanel(BorderLayout()) {
-
-        val truePreferredSize: Dimension
-            get() = super.getPreferredSize()
-
+    private class MyPanel : JPanel(BorderLayout()) {
         override fun getPreferredSize(): Dimension {
             val size = super.getPreferredSize()
-            val lSize = myLeft.preferredSize
-            return Dimension(size.width + lSize.width, size.height)
+            return Dimension(maxOf(size.width, 200), size.height)
         }
     }
 
@@ -202,7 +203,7 @@ class IncrementalSearchHandler {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
-            popHistory(editor, hintData)
+            popHistory(editor, hint, hintData)
         }
     }
 
@@ -297,12 +298,10 @@ class IncrementalSearchHandler {
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hintData, searchBack, isNext)) }
 
-            if (areCaretAndHintUpdated(editor, isNext)) return popHistory(editor, hintData)
+            if (areCaretAndHintUpdated(editor, isNext)) return popHistory(editor, hint, hintData)
 
             val result = if (searchBack) results.first() else results.last()
-            hintData.updateHint(target, result.toColor(), result.toLabel())
-            val comp = hint.component as MyPanel
-            if (comp.truePreferredSize.width > comp.size.width) hint.pack()
+            (hint as MyHint).update(target, result.toColor(), result.toLabel())
         }
 
         private fun areCaretAndHintUpdated(editor: Editor, isNext: Boolean): Boolean = editor.caretModel.allCarets.all { caret ->
@@ -318,10 +317,10 @@ class IncrementalSearchHandler {
             hintData.history += HintState(target, color, title)
         }
 
-        private fun popHistory(editor: Editor, hintData: PerHintSearchData) {
+        private fun popHistory(editor: Editor, hint: LightweightHint, hintData: PerHintSearchData) {
             val hintState = hintData.history.lastOrNull() ?: return
             hintData.history = hintData.history.dropLast(1)
-            hintData.updateHint(hintState.text, hintState.color, hintState.title)
+            (hint as MyHint).update(hintState.text, hintState.color, hintState.title)
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 val caretState = caretData.history.lastOrNull() ?: return
