@@ -55,7 +55,7 @@ class IncrementalSearchHandler {
     }
 
     private class PerEditorSearchData {
-        internal var hint: LightweightHint? = null
+        internal var hint: MyHint? = null
         internal var lastSearch = ""
     }
 
@@ -286,7 +286,7 @@ class IncrementalSearchHandler {
         private fun searchWhole(target: String, text: CharSequence, searchBack: Boolean): Int =
                 search(if (searchBack) text.lastIndex else 0, target, text, searchBack, false)
 
-        private fun updatePositionAndHint(editor: Editor, hint: LightweightHint, searchBack: Boolean, charTyped: Char? = null) {
+        private fun updatePositionAndHint(editor: Editor, hint: MyHint, searchBack: Boolean, charTyped: Char? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
             val hintData = hint.getUserData(SEARCH_DATA_IN_HINT_KEY) ?: return
             pushHistory(editor, hintData, hintData.labelTarget.text, hintData.labelTarget.foreground, hintData.labelTitle.text)
@@ -301,7 +301,7 @@ class IncrementalSearchHandler {
             if (areCaretAndHintUpdated(editor, isNext)) return popHistory(editor, hint, hintData)
 
             val result = if (searchBack) results.first() else results.last()
-            (hint as MyHint).update(target, result.toColor(), result.toLabel())
+            hint.update(target, result.toColor(), result.toLabel())
         }
 
         private fun areCaretAndHintUpdated(editor: Editor, isNext: Boolean): Boolean = editor.caretModel.allCarets.all { caret ->
@@ -317,10 +317,10 @@ class IncrementalSearchHandler {
             hintData.history += HintState(target, color, title)
         }
 
-        private fun popHistory(editor: Editor, hint: LightweightHint, hintData: PerHintSearchData) {
+        private fun popHistory(editor: Editor, hint: MyHint, hintData: PerHintSearchData) {
             val hintState = hintData.history.lastOrNull() ?: return
             hintData.history = hintData.history.dropLast(1)
-            (hint as MyHint).update(hintState.text, hintState.color, hintState.title)
+            hint.update(hintState.text, hintState.color, hintState.title)
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 val caretState = caretData.history.lastOrNull() ?: return
