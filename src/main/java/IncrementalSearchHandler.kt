@@ -184,7 +184,7 @@ class IncrementalSearchHandler {
     private class MyPanel : JPanel(BorderLayout()) {
         override fun getPreferredSize(): Dimension {
             val size = super.getPreferredSize()
-            return Dimension(maxOf(size.width, 200), size.height)
+            return Dimension(maxOf(size.width + 10, 200), size.height)
         }
     }
 
