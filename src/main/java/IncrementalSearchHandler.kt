@@ -85,7 +85,8 @@ class IncrementalSearchHandler {
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE, BackSpaceHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP, UpHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN, DownHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ENTER, EnterHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ENTER)))
+            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ENTER, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ENTER)))
+            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_COPY, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_COPY)))
 
             ourActionsRegistered = true
         }
@@ -233,7 +234,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    class EnterHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class HandlerToHide(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
