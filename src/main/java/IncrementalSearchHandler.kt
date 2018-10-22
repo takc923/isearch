@@ -142,7 +142,7 @@ class IncrementalSearchHandler {
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
     }
 
-    private class MyHint(myPanel: MyPanel, val editor: Editor, val documentListener: DocumentListener, val caretListener: CaretListener) : LightweightHint(myPanel) {
+    private class MyHint(myPanel: MyPanel, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener) : LightweightHint(myPanel) {
         fun update(targetText: String, color: Color, titleText: String) {
             val comp = this.component as MyPanel
             val title = comp.getComponent(0) as MyLabel
