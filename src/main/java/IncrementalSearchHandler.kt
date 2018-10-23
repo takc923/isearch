@@ -52,6 +52,7 @@ class IncrementalSearchHandler {
     private class PerEditorSearchData {
         internal var hint: MyHint? = null
         internal var lastSearch = ""
+        internal var currentSearchBack = true
     }
 
     private class PerCaretSearchData {
@@ -63,7 +64,6 @@ class IncrementalSearchHandler {
     private data class CaretState(internal val offset: Int, internal val matchLength: Int)
 
     operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
-        currentSearchBack = searchBack
         if (!ourActionsRegistered) {
             val actionManager = EditorActionManager.getInstance()
 
@@ -80,6 +80,7 @@ class IncrementalSearchHandler {
         }
 
         val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
+        data.currentSearchBack = searchBack
         val currentHint = data.hint
         if (currentHint != null) return updatePositionAndHint(editor, currentHint, searchBack)
 
@@ -201,9 +202,10 @@ class IncrementalSearchHandler {
     class MyTypedHandler(originalHandler: TypedActionHandler?) : TypedActionHandlerBase(originalHandler) {
 
         override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
-            val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
+            val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)!!
+            val hint = editorData.hint
             if (hint == null) myOriginalHandler?.execute(editor, charTyped, dataContext)
-            else updatePositionAndHint(editor, hint, currentSearchBack, charTyped)
+            else updatePositionAndHint(editor, hint, editorData.currentSearchBack, charTyped)
         }
     }
 
@@ -263,8 +265,6 @@ class IncrementalSearchHandler {
         private val SEARCH_DATA_IN_CARET_KEY = Key.create<PerCaretSearchData>("ISearchHandler.SEARCH_DATA_IN_CARET_KEY")
 
         private var ourActionsRegistered = false
-
-        private var currentSearchBack = false
 
         data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean) {
             val labelText = getLabelText(searchBack, isWrapped, notFound)
