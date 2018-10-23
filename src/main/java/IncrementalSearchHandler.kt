@@ -73,8 +73,9 @@ class IncrementalSearchHandler {
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE, BackSpaceHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP, UpHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN, DownHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ENTER, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ENTER)))
+            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ENTER, EnterHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ENTER)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_COPY, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_COPY)))
+            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START)))
 
             ourActionsRegistered = true
         }
@@ -239,7 +240,14 @@ class IncrementalSearchHandler {
         }
     }
 
-    class UpHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    open class BaseEditorActionHandler(protected val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
+            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
+        }
+    }
+
+    class UpHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
@@ -247,13 +255,9 @@ class IncrementalSearchHandler {
             else updatePositionAndHint(editor, hint, true)
         }
 
-        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
-            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
-        }
     }
 
-    class DownHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class DownHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
@@ -261,13 +265,9 @@ class IncrementalSearchHandler {
             else updatePositionAndHint(editor, hint, false)
         }
 
-        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
-            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
-        }
     }
 
-    class HandlerToHide(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class EnterHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
@@ -275,10 +275,15 @@ class IncrementalSearchHandler {
             else hint.hide()
         }
 
-        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
-            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
+    }
+
+    class HandlerToHide(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
+
+        public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
+            myOriginalHandler.execute(editor, caret, dataContext)
+            editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
+
     }
 
     companion object {
