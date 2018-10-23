@@ -152,7 +152,7 @@ class IncrementalSearchHandler {
             return label
         }
 
-        fun doWithoutHandler(f: () -> Unit){
+        fun doWithoutHandler(f: () -> Unit) {
             ignoreCaretMove = true
             f()
             ignoreCaretMove = false
