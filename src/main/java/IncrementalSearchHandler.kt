@@ -109,15 +109,7 @@ class IncrementalSearchHandler {
         }
         editor.caretModel.addCaretListener(caretListener)
 
-        val label2 = MyLabel("")
-        val label1 = MyLabel(getLabel(searchBack, false, false))
-        label1.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
-
-        val panel = MyPanel()
-        panel.add(label1, BorderLayout.WEST)
-        panel.add(label2, BorderLayout.CENTER)
-        panel.border = BorderFactory.createLineBorder(JBColor.black)
-        val hint = MyHint(panel, project, label1, label2, editor, documentListener, caretListener)
+        val hint = MyHint(searchBack, project, editor, documentListener, caretListener)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
@@ -132,11 +124,18 @@ class IncrementalSearchHandler {
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
     }
 
-    private class MyHint(myPanel: MyPanel, val project: Project, val labelTitle: MyLabel, val labelTarget: MyLabel, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener) : LightweightHint(myPanel) {
+    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener) : LightweightHint(MyPanel()) {
         private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
-
         internal var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
+        private val labelTitle = MyLabel(getLabel(searchBack, false, false))
+        internal val labelTarget = MyLabel("")
+        init {
+            labelTitle.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
+            component.add(labelTitle, BorderLayout.WEST)
+            component.add(labelTarget, BorderLayout.CENTER)
+            component.border = BorderFactory.createLineBorder(JBColor.black)
+        }
 
         fun update(targetText: String, color: Color, titleText: String) {
             labelTitle.text = titleText
