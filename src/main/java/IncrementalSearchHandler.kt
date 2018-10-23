@@ -26,10 +26,7 @@ import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.actionSystem.EditorActionManager
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 import com.intellij.openapi.editor.colors.EditorColors
-import com.intellij.openapi.editor.event.CaretEvent
-import com.intellij.openapi.editor.event.CaretListener
-import com.intellij.openapi.editor.event.DocumentEvent
-import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
@@ -93,7 +90,10 @@ class IncrementalSearchHandler {
         val caretListener = MyCaretListener()
         editor.caretModel.addCaretListener(caretListener)
 
-        val hint = MyHint(searchBack, project, editor, documentListener, caretListener)
+        val selectionListener = MySelectionListener()
+        editor.selectionModel.addSelectionListener(selectionListener)
+
+        val hint = MyHint(searchBack, project, editor, documentListener, caretListener, selectionListener)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
@@ -108,10 +108,15 @@ class IncrementalSearchHandler {
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
     }
 
+    private class MySelectionListener : SelectionListener {
+        override fun selectionChanged(e: SelectionEvent?) {
+            e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
+        }
+    }
+
     private class MyCaretListener : CaretListener {
         override fun caretPositionChanged(e: CaretEvent?) {
-            val hint = e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
-            hint.hide()
+            e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
 
         override fun caretAdded(e: CaretEvent?) {
@@ -131,7 +136,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener) : LightweightHint(MyPanel()) {
+    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener, private val selectionListener: MySelectionListener) : LightweightHint(MyPanel()) {
         private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
 
         private var ignoreCaretMove = false
@@ -204,6 +209,7 @@ class IncrementalSearchHandler {
             editorData.hint = null
             editor.document.removeDocumentListener(documentListener)
             editor.caretModel.removeCaretListener(caretListener)
+            editor.selectionModel.removeSelectionListener(selectionListener)
         }
     }
 
