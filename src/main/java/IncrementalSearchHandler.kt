@@ -87,11 +87,7 @@ class IncrementalSearchHandler {
         val currentHint = data.hint
         if (currentHint != null) return updatePositionAndHint(editor, currentHint, searchBack)
 
-        val documentListener = object : DocumentListener {
-            override fun documentChanged(e: DocumentEvent?) {
-                editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
-            }
-        }
+        val documentListener = MyDocumentListener(editor)
         editor.document.addDocumentListener(documentListener)
 
         val caretListener = MyCaretListener()
@@ -126,6 +122,12 @@ class IncrementalSearchHandler {
             val caretData = e?.caret?.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             caretData.segmentHighlighter?.dispose()
             caretData.segmentHighlighter = null
+        }
+    }
+
+    private class MyDocumentListener(val editor: Editor) : DocumentListener {
+        override fun documentChanged(e: DocumentEvent?) {
+            editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
     }
 
