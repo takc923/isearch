@@ -267,8 +267,8 @@ class IncrementalSearchHandler {
         private var currentSearchBack = false
 
         data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean) {
-            fun toLabel(): String = getLabel(searchBack, isWrapped, notFound)
-            fun toColor(): Color = if (notFound) JBColor.RED else JBColor.foreground()
+            val labelText = getLabel(searchBack, isWrapped, notFound)
+            val color: Color = if (notFound) JBColor.RED else JBColor.foreground()
         }
 
         private fun getLabel(searchBack: Boolean, isWrapped: Boolean, notFound: Boolean): String = sequenceOf(
@@ -308,7 +308,7 @@ class IncrementalSearchHandler {
             if (areCaretAndHintUpdated(editor, isNext)) return hint.popHistory(editor)
 
             val result = if (searchBack) results.first() else results.last()
-            hint.update(target, result.toColor(), result.toLabel())
+            hint.update(target, result.color, result.labelText)
         }
 
         private fun areCaretAndHintUpdated(editor: Editor, isNext: Boolean): Boolean = editor.caretModel.allCarets.all { caret ->
