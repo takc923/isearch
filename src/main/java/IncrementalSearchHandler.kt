@@ -41,7 +41,10 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.LightweightHint
 import com.intellij.util.text.StringSearcher
 import com.intellij.util.ui.UIUtil
-import java.awt.*
+import java.awt.BorderLayout
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.Font
 import javax.swing.BorderFactory
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -112,7 +115,6 @@ class IncrementalSearchHandler {
     private class MyCaretListener : CaretListener {
         override fun caretPositionChanged(e: CaretEvent?) {
             val hint = e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
-            if (hint.ignoreCaretMove) return
             hint.hide()
         }
 
@@ -129,16 +131,19 @@ class IncrementalSearchHandler {
 
     private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener) : LightweightHint(MyPanel()) {
         private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
-        internal var ignoreCaretMove = false
+
+        private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
         private val labelTitle = newLabel(getLabelText(searchBack, false, false))
         internal val labelTarget = newLabel("")
+
         init {
             labelTitle.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
             component.add(labelTitle, BorderLayout.WEST)
             component.add(labelTarget, BorderLayout.CENTER)
             component.border = BorderFactory.createLineBorder(JBColor.black)
         }
+
         private fun newLabel(text: String): JLabel {
             val label = JLabel(text)
             label.background = HintUtil.getInformationColor()
@@ -147,12 +152,19 @@ class IncrementalSearchHandler {
             return label
         }
 
+        fun doWithoutHandler(f: () -> Unit){
+            ignoreCaretMove = true
+            f()
+            ignoreCaretMove = false
+        }
+
         fun update(targetText: String, color: Color, titleText: String) {
             labelTitle.text = titleText
             labelTarget.text = targetText
             labelTarget.foreground = color
             this.pack()
         }
+
         fun pushHistory(editor: Editor) {
             editor.caretModel.runForEachCaret {
                 val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
@@ -160,6 +172,7 @@ class IncrementalSearchHandler {
             }
             this.history += HintState(this.labelTarget.text, this.labelTarget.foreground, this.labelTitle.text)
         }
+
         fun popHistory(editor: Editor) {
             val hintState = this.history.lastOrNull() ?: return
             this.history = this.history.dropLast(1)
@@ -173,7 +186,7 @@ class IncrementalSearchHandler {
         }
 
         override fun hide() {
-            if (!isVisible) return
+            if (!isVisible || ignoreCaretMove) return
 
             super.hide()
             // Recursive runForEachCaret invocations are not allowed. So now using allCarets.forEach
@@ -335,11 +348,11 @@ class IncrementalSearchHandler {
         private fun moveCaret(caretData: PerCaretSearchData, hint: MyHint, caret: Caret, index: Int, editor: Editor, matchLength: Int) {
             caretData.segmentHighlighter?.dispose()
             caretData.segmentHighlighter = null
-            hint.ignoreCaretMove = true
-            caret.moveToOffset(index)
-            editor.selectionModel.removeSelection()
-            editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
-            hint.ignoreCaretMove = false
+            hint.doWithoutHandler {
+                caret.moveToOffset(index)
+                editor.selectionModel.removeSelection()
+                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+            }
             addHighlight(editor, caretData, caret.offset, matchLength)
             IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
         }
