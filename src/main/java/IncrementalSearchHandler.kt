@@ -130,13 +130,20 @@ class IncrementalSearchHandler {
         private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
         internal var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
-        private val labelTitle = MyLabel(getLabel(searchBack, false, false))
-        internal val labelTarget = MyLabel("")
+        private val labelTitle = newLabel(getLabel(searchBack, false, false))
+        internal val labelTarget = newLabel("")
         init {
             labelTitle.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
             component.add(labelTitle, BorderLayout.WEST)
             component.add(labelTarget, BorderLayout.CENTER)
             component.border = BorderFactory.createLineBorder(JBColor.black)
+        }
+        private fun newLabel(text: String): JLabel {
+            val label = JLabel(text)
+            label.background = HintUtil.getInformationColor()
+            label.foreground = JBColor.foreground()
+            label.isOpaque = true
+            return label
         }
 
         fun update(targetText: String, color: Color, titleText: String) {
@@ -181,14 +188,6 @@ class IncrementalSearchHandler {
             editorData.hint = null
             editor.document.removeDocumentListener(documentListener)
             editor.caretModel.removeCaretListener(caretListener)
-        }
-    }
-
-    private class MyLabel(text: String) : JLabel(text) {
-        init {
-            this.background = HintUtil.getInformationColor()
-            this.foreground = JBColor.foreground()
-            this.isOpaque = true
         }
     }
 
