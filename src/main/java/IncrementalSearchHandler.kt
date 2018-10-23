@@ -130,7 +130,7 @@ class IncrementalSearchHandler {
         private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
         internal var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
-        private val labelTitle = newLabel(getLabel(searchBack, false, false))
+        private val labelTitle = newLabel(getLabelText(searchBack, false, false))
         internal val labelTarget = newLabel("")
         init {
             labelTitle.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
@@ -267,11 +267,11 @@ class IncrementalSearchHandler {
         private var currentSearchBack = false
 
         data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean) {
-            val labelText = getLabel(searchBack, isWrapped, notFound)
+            val labelText = getLabelText(searchBack, isWrapped, notFound)
             val color: Color = if (notFound) JBColor.RED else JBColor.foreground()
         }
 
-        private fun getLabel(searchBack: Boolean, isWrapped: Boolean, notFound: Boolean): String = sequenceOf(
+        private fun getLabelText(searchBack: Boolean, isWrapped: Boolean, notFound: Boolean): String = sequenceOf(
                 if (notFound) "Failing" else null,
                 if (isWrapped) "Wrapped" else null,
                 "I-search",
