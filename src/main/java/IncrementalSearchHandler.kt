@@ -90,23 +90,7 @@ class IncrementalSearchHandler {
         }
         editor.document.addDocumentListener(documentListener)
 
-        val caretListener = object : CaretListener {
-            override fun caretPositionChanged(e: CaretEvent?) {
-                val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
-                if (hint.ignoreCaretMove) return
-                hint.hide()
-            }
-
-            override fun caretAdded(e: CaretEvent?) {
-                editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
-            }
-
-            override fun caretRemoved(e: CaretEvent?) {
-                val caretData = e?.caret?.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
-                caretData.segmentHighlighter?.dispose()
-                caretData.segmentHighlighter = null
-            }
-        }
+        val caretListener = MyCaretListener()
         editor.caretModel.addCaretListener(caretListener)
 
         val hint = MyHint(searchBack, project, editor, documentListener, caretListener)
@@ -122,6 +106,24 @@ class IncrementalSearchHandler {
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
+    }
+
+    private class MyCaretListener : CaretListener {
+        override fun caretPositionChanged(e: CaretEvent?) {
+            val hint = e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint ?: return
+            if (hint.ignoreCaretMove) return
+            hint.hide()
+        }
+
+        override fun caretAdded(e: CaretEvent?) {
+            e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
+        }
+
+        override fun caretRemoved(e: CaretEvent?) {
+            val caretData = e?.caret?.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
+            caretData.segmentHighlighter?.dispose()
+            caretData.segmentHighlighter = null
+        }
     }
 
     private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener) : LightweightHint(MyPanel()) {
