@@ -224,8 +224,8 @@ class IncrementalSearchHandler {
     class MyTypedHandler(originalHandler: TypedActionHandler?) : TypedActionHandlerBase(originalHandler) {
 
         override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
-            val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
-            val hint = editorData.hint
+            val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
+            val hint = editorData?.hint
             if (hint == null) myOriginalHandler?.execute(editor, charTyped, dataContext)
             else updatePositionAndHint(editor, hint, editorData.currentSearchBack, charTyped)
         }
