@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
+import com.intellij.codeInsight.editorActions.PasteHandler
 import com.intellij.codeInsight.hint.HintManagerImpl
 import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.codeInsight.template.impl.editorActions.TypedActionHandlerBase
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.IdeActions
+import com.intellij.openapi.application.ex.ClipboardUtil
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler
 import com.intellij.openapi.editor.actionSystem.EditorActionManager
+import com.intellij.openapi.editor.actionSystem.EditorTextInsertHandler
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.event.*
@@ -36,12 +39,14 @@ import com.intellij.openapi.util.Key
 import com.intellij.ui.HintHint
 import com.intellij.ui.JBColor
 import com.intellij.ui.LightweightHint
+import com.intellij.util.Producer
 import com.intellij.util.text.StringSearcher
 import com.intellij.util.ui.UIUtil
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
+import java.awt.datatransfer.Transferable
 import javax.swing.BorderFactory
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -76,6 +81,8 @@ class IncrementalSearchHandler {
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ENTER, EnterHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ENTER)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_COPY, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_COPY)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START)))
+            val pasteHandler = actionManager.getActionHandler(IdeActions.ACTION_EDITOR_PASTE) as PasteHandler
+            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_PASTE, MyPasteHandler(pasteHandler))
 
             ourActionsRegistered = true
         }
@@ -227,7 +234,7 @@ class IncrementalSearchHandler {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             val hint = editorData?.hint
             if (hint == null) myOriginalHandler?.execute(editor, charTyped, dataContext)
-            else updatePositionAndHint(editor, hint, editorData.currentSearchBack, charTyped)
+            else updatePositionAndHint(editor, hint, editorData.currentSearchBack, charTyped.toString())
         }
     }
 
@@ -286,6 +293,26 @@ class IncrementalSearchHandler {
 
     }
 
+    class MyPasteHandler(private val myOriginalHandler: PasteHandler) : EditorActionHandler(), EditorTextInsertHandler {
+
+        override fun execute(editor: Editor?, dataContext: DataContext?, producer: Producer<Transferable>?) =
+                myOriginalHandler.execute(editor, dataContext, producer)
+
+        override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
+            val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
+            val text = ClipboardUtil.getTextInClipboard()
+            val hint = editorData?.hint
+            if (hint == null || text == null || text.isEmpty()) myOriginalHandler.execute(editor, caret, dataContext)
+            else updatePositionAndHint(editor, hint, editorData.currentSearchBack, text)
+        }
+
+        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
+            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
+        }
+
+    }
+
     companion object {
         private val SEARCH_DATA_IN_EDITOR_VIEW_KEY = Key.create<PerEditorSearchData>("ISearchHandler.SEARCH_DATA_IN_EDITOR_VIEW_KEY")
         private val SEARCH_DATA_IN_CARET_KEY = Key.create<PerCaretSearchData>("ISearchHandler.SEARCH_DATA_IN_CARET_KEY")
@@ -320,7 +347,7 @@ class IncrementalSearchHandler {
         private fun searchWhole(target: String, text: CharSequence, searchBack: Boolean): Int =
                 search(if (searchBack) text.lastIndex else 0, target, text, searchBack, false)
 
-        private fun updatePositionAndHint(editor: Editor, hint: MyHint, searchBack: Boolean, charTyped: Char? = null) {
+        private fun updatePositionAndHint(editor: Editor, hint: MyHint, searchBack: Boolean, charTyped: String? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
             hint.pushHistory(editor)
 
