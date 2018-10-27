@@ -76,8 +76,6 @@ class IncrementalSearchHandler {
             typedAction.setupRawHandler(MyTypedHandler(typedAction.rawHandler))
 
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE, BackSpaceHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP, UpHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN, DownHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ENTER, EnterHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ENTER)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_COPY, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_COPY)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START)))
@@ -252,26 +250,6 @@ class IncrementalSearchHandler {
             val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
         }
-    }
-
-    class UpHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
-
-        public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
-            val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
-            if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else updatePositionAndHint(editor, hint, true)
-        }
-
-    }
-
-    class DownHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
-
-        public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
-            val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
-            if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
-            else updatePositionAndHint(editor, hint, false)
-        }
-
     }
 
     class EnterHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
