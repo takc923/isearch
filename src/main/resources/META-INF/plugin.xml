@@ -12,6 +12,15 @@
     ]]></description>
 
     <change-notes><![CDATA[
+      <p>v0.6</p>
+      <ul>
+        <li>Support paste</li>
+        <li>Wrapped search</li>
+        <li>Backspace to history back</li>
+        <li>Highlight all caret's matching text</li>
+        <li>Remove wildcard feature</li>
+      </ul>
+      <p>v0.5</p>
       <ul>
         <li>Support multiple carets</li>
       </ul>
