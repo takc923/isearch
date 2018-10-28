@@ -32,10 +32,6 @@
 
     <idea-version since-build="181"/>
 
-    <extensions defaultExtensionNs="com.intellij">
-        <!-- Add your extensions here -->
-    </extensions>
-
     <actions>
         <action id="ISearchBackward" class="ISearchBackwardAction" text="isearch-backward" description="isearch-backward">
             <keyboard-shortcut first-keystroke="meta R" keymap="$default"/>
