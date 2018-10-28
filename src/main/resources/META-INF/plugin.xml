@@ -30,6 +30,8 @@
          on how to target different products -->
     <depends>com.intellij.modules.lang</depends>
 
+    <idea-version since-build="181"/>
+
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
     </extensions>
