@@ -76,6 +76,7 @@ class IncrementalSearchHandler {
             typedAction.setupRawHandler(MyTypedHandler(typedAction.rawHandler))
 
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE, BackSpaceHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE)))
+            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ESCAPE, EscapeHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ESCAPE)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ENTER, EnterHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ENTER)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_COPY, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_COPY)))
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START)))
@@ -198,6 +199,15 @@ class IncrementalSearchHandler {
             })
         }
 
+        fun backToFirstAndHide(editor: Editor) {
+            editor.caretModel.runForEachCaret(fun(caret: Caret) {
+                val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
+                val caretState = caretData.history.firstOrNull() ?: return
+                moveCaret(caretData, this, caret, caretState.offset, editor, caretState.matchLength)
+            })
+            hide()
+        }
+
         override fun hide() {
             if (!isVisible || ignoreCaretMove) return
 
@@ -242,6 +252,14 @@ class IncrementalSearchHandler {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
             hint.popHistory(editor)
+        }
+    }
+
+    class EscapeHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+        public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
+            val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
+            hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
+            hint.backToFirstAndHide(editor)
         }
     }
 
