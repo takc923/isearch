@@ -246,7 +246,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    class BackSpaceHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class BackSpaceHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
@@ -255,7 +255,7 @@ class IncrementalSearchHandler {
         }
     }
 
-    class EscapeHandler(private val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
+    class EscapeHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
