@@ -239,19 +239,19 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         }
     }
 
+    abstract class BaseEditorActionHandler<T : EditorActionHandler>(protected val myOriginalHandler: T) : EditorActionHandler() {
+        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
+            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
+        }
+    }
+
     class BackSpaceHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
 
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
             hint.popHistory(editor)
-        }
-    }
-
-    abstract class BaseEditorActionHandler<T : EditorActionHandler>(protected val myOriginalHandler: T) : EditorActionHandler() {
-        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
-            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
         }
     }
 
