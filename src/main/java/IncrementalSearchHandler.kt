@@ -93,16 +93,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         val currentHint = data.hint
         if (currentHint != null) return updatePositionAndHint(editor, currentHint, searchBack)
 
-        val documentListener = MyDocumentListener(editor)
-        editor.document.addDocumentListener(documentListener)
-
-        val caretListener = MyCaretListener()
-        editor.caretModel.addCaretListener(caretListener)
-
-        val selectionListener = MySelectionListener()
-        editor.selectionModel.addSelectionListener(selectionListener)
-
-        val hint = MyHint(searchBack, project, editor, documentListener, caretListener, selectionListener)
+        val hint = MyHint(searchBack, project, editor)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
@@ -145,8 +136,12 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         }
     }
 
-    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener, private val selectionListener: MySelectionListener) : LightweightHint(MyPanel()) {
+    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor) : LightweightHint(MyPanel()) {
         private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
+
+        private val caretListener = MyCaretListener()
+        private val selectionListener = MySelectionListener()
+        private val documentListener = MyDocumentListener(editor)
 
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
@@ -158,6 +153,9 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             component.add(labelTitle, BorderLayout.WEST)
             component.add(labelTarget, BorderLayout.CENTER)
             component.border = BorderFactory.createLineBorder(JBColor.black)
+            editor.caretModel.addCaretListener(caretListener)
+            editor.selectionModel.addSelectionListener(selectionListener)
+            editor.document.addDocumentListener(documentListener)
         }
 
         private fun newLabel(text: String): JLabel {
