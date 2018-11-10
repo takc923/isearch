@@ -230,7 +230,6 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
     }
 
     class MyTypedHandler(originalHandler: TypedActionHandler?) : TypedActionHandlerBase(originalHandler) {
-
         override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             val hint = editorData?.hint
@@ -247,7 +246,6 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
     }
 
     class BackSpaceHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
-
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
@@ -256,46 +254,37 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
     }
 
     class UpHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
-
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
             else updatePositionAndHint(editor, hint, true)
         }
-
     }
 
     class DownHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
-
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
             else updatePositionAndHint(editor, hint, false)
         }
-
     }
 
     class EnterHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
-
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
             else hint.hide()
         }
-
     }
 
     class HandlerToHide(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
-
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             myOriginalHandler.execute(editor, caret, dataContext)
             editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
-
     }
 
     class MyPasteHandler(myOriginalHandler: PasteHandler) : BaseEditorActionHandler<PasteHandler>(myOriginalHandler), EditorTextInsertHandler {
-
         override fun execute(editor: Editor?, dataContext: DataContext?, producer: Producer<Transferable>?) =
                 myOriginalHandler.execute(editor, dataContext, producer)
 
@@ -306,7 +295,6 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             if (hint == null || text == null || text.isEmpty()) myOriginalHandler.execute(editor, caret, dataContext)
             else updatePositionAndHint(editor, hint, editorData.currentSearchBack, text)
         }
-
     }
 
     companion object {
