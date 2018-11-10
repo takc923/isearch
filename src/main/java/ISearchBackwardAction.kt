@@ -1,1 +1,3 @@
-class ISearchBackwardAction : ISearchActionBase(true)
+import com.intellij.openapi.editor.actionSystem.EditorAction
+
+class ISearchBackwardAction : EditorAction(IncrementalSearchHandler(true))

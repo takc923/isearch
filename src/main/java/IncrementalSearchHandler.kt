@@ -52,7 +52,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-class IncrementalSearchHandler {
+class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHandler() {
 
     private class PerEditorSearchData {
         internal var hint: MyHint? = null
@@ -68,7 +68,8 @@ class IncrementalSearchHandler {
 
     private data class CaretState(internal val offset: Int, internal val matchLength: Int)
 
-    operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
+    override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
+        val project = editor.project ?: return
         if (!ourActionsRegistered) {
             val actionManager = EditorActionManager.getInstance()
 
@@ -406,6 +407,5 @@ class IncrementalSearchHandler {
 
         private fun detectSmartCaseSensitive(prefix: String): Boolean =
                 prefix.any { Character.isUpperCase(it) && Character.toUpperCase(it) != Character.toLowerCase(it) }
-
     }
 }
