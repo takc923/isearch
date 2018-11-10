@@ -354,7 +354,8 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
 
             if (charTyped != null) hint.labelTarget.text += charTyped
             val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
-            val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() // search from current offset if using lastSearch
+            // search from current offset if using lastSearch
+            val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() || hint.labelTarget.text.length == 1 && searchBack
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hint, searchBack, isNext)) }
