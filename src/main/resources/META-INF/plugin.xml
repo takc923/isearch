@@ -14,7 +14,7 @@
     ]]></description>
 
     <change-notes><![CDATA[
-      <p>To be released</p>
+      <p>v0.7</p>
       <ul>
         <li>Support 2018.1~2018.2.*</li>
         <li>Some internal changes which includes kotlin update and refactorings</li>
