@@ -7,11 +7,18 @@
     <p>isearch plugin.</p>
     <p>This plugin adds isearch-forward and isearch-backward action which are like Emacs.</p>
     <p>Default keymap(Mac)</p>
-    <p>  isearch-forward:  Control-S</p>
-    <p>  isearch-backward: Control-R</p>
+    <ul>
+      <li>isearch-forward:  Control-S</li>
+      <li>isearch-backward: Control-R</li>
+    </ul>
     ]]></description>
 
     <change-notes><![CDATA[
+      <p>To be released</p>
+      <ul>
+        <li>Support 2018.1~2018.2.*</li>
+        <li>Some internal changes which includes kotlin update and refactorings</li>
+      </ul>
       <p>v0.6</p>
       <ul>
         <li>Support paste</li>
