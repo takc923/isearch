@@ -52,7 +52,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-class IncrementalSearchHandler {
+class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHandler() {
 
     private class PerEditorSearchData {
         internal var hint: MyHint? = null
@@ -68,7 +68,8 @@ class IncrementalSearchHandler {
 
     private data class CaretState(internal val offset: Int, internal val matchLength: Int)
 
-    operator fun invoke(project: Project, editor: Editor, searchBack: Boolean) {
+    override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
+        val project = editor.project ?: return
         if (!ourActionsRegistered) {
             val actionManager = EditorActionManager.getInstance()
 
@@ -92,16 +93,7 @@ class IncrementalSearchHandler {
         val currentHint = data.hint
         if (currentHint != null) return updatePositionAndHint(editor, currentHint, searchBack)
 
-        val documentListener = MyDocumentListener(editor)
-        editor.document.addDocumentListener(documentListener)
-
-        val caretListener = MyCaretListener()
-        editor.caretModel.addCaretListener(caretListener)
-
-        val selectionListener = MySelectionListener()
-        editor.selectionModel.addSelectionListener(selectionListener)
-
-        val hint = MyHint(searchBack, project, editor, documentListener, caretListener, selectionListener)
+        val hint = MyHint(searchBack, project, editor)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
@@ -144,8 +136,12 @@ class IncrementalSearchHandler {
         }
     }
 
-    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor, private val documentListener: DocumentListener, private val caretListener: CaretListener, private val selectionListener: MySelectionListener) : LightweightHint(MyPanel()) {
+    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor) : LightweightHint(MyPanel()) {
         private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
+
+        private val caretListener = MyCaretListener()
+        private val selectionListener = MySelectionListener()
+        private val documentListener = MyDocumentListener(editor)
 
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
@@ -157,6 +153,9 @@ class IncrementalSearchHandler {
             component.add(labelTitle, BorderLayout.WEST)
             component.add(labelTarget, BorderLayout.CENTER)
             component.border = BorderFactory.createLineBorder(JBColor.black)
+            editor.caretModel.addCaretListener(caretListener)
+            editor.selectionModel.addSelectionListener(selectionListener)
+            editor.document.addDocumentListener(documentListener)
         }
 
         private fun newLabel(text: String): JLabel {
@@ -229,7 +228,6 @@ class IncrementalSearchHandler {
     }
 
     class MyTypedHandler(originalHandler: TypedActionHandler?) : TypedActionHandlerBase(originalHandler) {
-
         override fun execute(editor: Editor, charTyped: Char, dataContext: DataContext) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             val hint = editorData?.hint
@@ -238,8 +236,14 @@ class IncrementalSearchHandler {
         }
     }
 
-    class BackSpaceHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
+    abstract class BaseEditorActionHandler<T : EditorActionHandler>(protected val myOriginalHandler: T) : EditorActionHandler() {
+        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
+            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
+            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
+        }
+    }
 
+    class BackSpaceHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
@@ -247,54 +251,38 @@ class IncrementalSearchHandler {
         }
     }
 
-    open class BaseEditorActionHandler(protected val myOriginalHandler: EditorActionHandler) : EditorActionHandler() {
-        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
-            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
-        }
-    }
-
-    class UpHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
-
+    class UpHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
             else updatePositionAndHint(editor, hint, true)
         }
-
     }
 
-    class DownHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
-
+    class DownHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
             else updatePositionAndHint(editor, hint, false)
         }
-
     }
 
-    class EnterHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
-
+    class EnterHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val hint = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint
             if (hint == null) myOriginalHandler.execute(editor, caret, dataContext)
             else hint.hide()
         }
-
     }
 
-    class HandlerToHide(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
-
+    class HandlerToHide(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler<EditorActionHandler>(myOriginalHandler) {
         public override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             myOriginalHandler.execute(editor, caret, dataContext)
             editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
-
     }
 
-    class MyPasteHandler(private val myOriginalHandler: PasteHandler) : EditorActionHandler(), EditorTextInsertHandler {
-
+    class MyPasteHandler(myOriginalHandler: PasteHandler) : BaseEditorActionHandler<PasteHandler>(myOriginalHandler), EditorTextInsertHandler {
         override fun execute(editor: Editor?, dataContext: DataContext?, producer: Producer<Transferable>?) =
                 myOriginalHandler.execute(editor, dataContext, producer)
 
@@ -305,12 +293,6 @@ class IncrementalSearchHandler {
             if (hint == null || text == null || text.isEmpty()) myOriginalHandler.execute(editor, caret, dataContext)
             else updatePositionAndHint(editor, hint, editorData.currentSearchBack, text)
         }
-
-        override fun isEnabledForCaret(editor: Editor, caret: Caret, dataContext: DataContext?): Boolean {
-            val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
-            return data?.hint != null || myOriginalHandler.isEnabled(editor, caret, dataContext)
-        }
-
     }
 
     companion object {
@@ -353,7 +335,8 @@ class IncrementalSearchHandler {
 
             if (charTyped != null) hint.labelTarget.text += charTyped
             val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
-            val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() // search from current offset if using lastSearch
+            // search from current offset if using lastSearch
+            val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() || hint.labelTarget.text.length == 1 && searchBack
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hint, searchBack, isNext)) }
@@ -406,6 +389,5 @@ class IncrementalSearchHandler {
 
         private fun detectSmartCaseSensitive(prefix: String): Boolean =
                 prefix.any { Character.isUpperCase(it) && Character.toUpperCase(it) != Character.toLowerCase(it) }
-
     }
 }
