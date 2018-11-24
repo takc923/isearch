@@ -34,7 +34,6 @@ intellij {
     pluginName 'isearch'
 }
 
-apply from: "gradle.properties"
 publishPlugin {
     username intellijPublishUsername
     password intellijPublishPassword
