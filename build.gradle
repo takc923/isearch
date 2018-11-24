@@ -30,7 +30,7 @@ dependencies {
 
 intellij {
     version '2018.3'
-    intellij.updateSinceUntilBuild false
+    updateSinceUntilBuild false
     pluginName 'isearch'
 }
 
