@@ -109,29 +109,29 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
     }
 
     private class MySelectionListener : SelectionListener {
-        override fun selectionChanged(e: SelectionEvent?) {
-            e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
+        override fun selectionChanged(e: SelectionEvent) {
+            e.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
     }
 
     private class MyCaretListener : CaretListener {
-        override fun caretPositionChanged(e: CaretEvent?) {
-            e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
+        override fun caretPositionChanged(e: CaretEvent) {
+            e.editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
 
-        override fun caretAdded(e: CaretEvent?) {
-            e?.editor?.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
+        override fun caretAdded(e: CaretEvent) {
+            e.editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
 
-        override fun caretRemoved(e: CaretEvent?) {
-            val caretData = e?.caret?.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
+        override fun caretRemoved(e: CaretEvent) {
+            val caretData = e.caret?.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
             caretData.segmentHighlighter?.dispose()
             caretData.segmentHighlighter = null
         }
     }
 
     private class MyDocumentListener(val editor: Editor) : DocumentListener {
-        override fun documentChanged(e: DocumentEvent?) {
+        override fun documentChanged(e: DocumentEvent) {
             editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)?.hint?.hide()
         }
     }
