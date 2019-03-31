@@ -1,7 +1,7 @@
 <idea-plugin>
     <id>io.github.takc923.isearch</id>
     <name>isearch</name>
-    <vendor url="https://github.com/takc923">takc923</vendor>
+    <vendor url="https://github.com/takc923/isearch">takc923</vendor>
 
     <description><![CDATA[
     <p>isearch plugin.</p>
