@@ -14,7 +14,7 @@ plugins {
 apply plugin: 'kotlin'
 
 group 'io.github.takc923'
-version '0.9-SNAPSHOT'
+version '0.9'
 
 sourceCompatibility = 1.8
 
