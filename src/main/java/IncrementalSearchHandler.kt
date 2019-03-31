@@ -318,7 +318,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
             val diffForNext = if (isNext) 1 else 0
             val (_start, _end) = when {
-                searchBack -> Pair(0, currentOffset + target.lastIndex - diffForNext)
+                searchBack -> Pair(0, currentOffset + target.length - diffForNext)
                 else -> Pair(currentOffset + diffForNext, text.length)
             }
             val max = if (searchBack) text.lastIndex else text.length
