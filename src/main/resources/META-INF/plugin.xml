@@ -14,6 +14,12 @@
     ]]></description>
 
     <change-notes><![CDATA[
+      <p>v0.10</p>
+      <ul>
+        <li>Support only 193.1784+</li>
+        <li>Refactoring</li>
+        <li>Update dependencies</li>
+      </ul>
       <p>v0.9</p>
       <ul>
         <li>Fix bug that crashes if using with specific plugin</li>
