@@ -24,10 +24,7 @@ import com.intellij.openapi.application.ex.ClipboardUtil
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
-import com.intellij.openapi.editor.actionSystem.EditorActionHandler
-import com.intellij.openapi.editor.actionSystem.EditorActionManager
-import com.intellij.openapi.editor.actionSystem.EditorTextInsertHandler
-import com.intellij.openapi.editor.actionSystem.TypedActionHandler
+import com.intellij.openapi.editor.actionSystem.*
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -47,10 +44,7 @@ import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
 import java.awt.datatransfer.Transferable
-import javax.swing.BorderFactory
-import javax.swing.JLabel
-import javax.swing.JPanel
-import javax.swing.SwingUtilities
+import javax.swing.*
 
 class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHandler() {
 
@@ -73,7 +67,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         if (!ourActionsRegistered) {
             val actionManager = EditorActionManager.getInstance()
 
-            val typedAction = actionManager.typedAction
+            val typedAction = TypedAction.getInstance()
             typedAction.setupRawHandler(MyTypedHandler(typedAction.rawHandler))
 
             actionManager.setActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE, BackSpaceHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE)))
@@ -144,7 +138,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
 
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
-        private val labelTitle = newLabel(getLabelText(searchBack, false, false))
+        private val labelTitle = newLabel(getLabelText(searchBack, isWrapped = false, notFound = false))
         internal val labelTarget = newLabel("")
 
         init {
