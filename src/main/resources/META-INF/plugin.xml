@@ -61,10 +61,10 @@
     <idea-version since-build="193.1784" />
 
     <actions>
-        <action id="ISearchBackward" class="ISearchBackwardAction" text="isearch-backward" description="isearch-backward">
+        <action id="ISearchBackward" class="ISearchBackwardAction" text="isearch-backward">
             <keyboard-shortcut first-keystroke="meta R" keymap="$default"/>
         </action>
-        <action id="ISearchForward" class="ISearchForwardAction" text="isearch-forward" description="isearch-forward">
+        <action id="ISearchForward" class="ISearchForwardAction" text="isearch-forward">
             <keyboard-shortcut first-keystroke="meta S" keymap="$default"/>
         </action>
     </actions>
