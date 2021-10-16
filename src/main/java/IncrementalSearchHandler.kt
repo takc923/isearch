@@ -275,12 +275,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         }
     }
 
-    class MyPasteHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler), EditorTextInsertHandler {
-        override fun execute(editor: Editor?, dataContext: DataContext?, producer: Producer<Transferable>?) {
-            val originalPasteHandler = myOriginalHandler as? PasteHandler ?: return
-            originalPasteHandler.execute(editor, dataContext, producer)
-        }
-
+    class MyPasteHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
         override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             val text = ClipboardUtil.getTextInClipboard()
