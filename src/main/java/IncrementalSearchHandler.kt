@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.intellij.codeInsight.editorActions.PasteHandler
 import com.intellij.codeInsight.hint.HintManagerImpl
 import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.codeInsight.template.impl.editorActions.TypedActionHandlerBase
@@ -24,7 +23,10 @@ import com.intellij.openapi.application.ex.ClipboardUtil
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
-import com.intellij.openapi.editor.actionSystem.*
+import com.intellij.openapi.editor.actionSystem.EditorActionHandler
+import com.intellij.openapi.editor.actionSystem.EditorActionManager
+import com.intellij.openapi.editor.actionSystem.TypedAction
+import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -36,15 +38,16 @@ import com.intellij.openapi.util.Key
 import com.intellij.ui.HintHint
 import com.intellij.ui.JBColor
 import com.intellij.ui.LightweightHint
-import com.intellij.util.Producer
 import com.intellij.util.text.StringSearcher
 import com.intellij.util.ui.UIUtil
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
-import java.awt.datatransfer.Transferable
-import javax.swing.*
+import javax.swing.BorderFactory
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.SwingUtilities
 
 class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHandler() {
 
