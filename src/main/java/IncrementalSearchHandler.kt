@@ -52,18 +52,18 @@ import javax.swing.SwingUtilities
 class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHandler() {
 
     private class PerEditorSearchData {
-        internal var hint: MyHint? = null
-        internal var lastSearch = ""
-        internal var currentSearchBack = true
+        var hint: MyHint? = null
+        var lastSearch = ""
+        var currentSearchBack = true
     }
 
     private class PerCaretSearchData {
-        internal var segmentHighlighter: RangeHighlighter? = null
-        internal var history: List<CaretState> = listOf()
-        internal var matchLength: Int = 0
+        var segmentHighlighter: RangeHighlighter? = null
+        var history: List<CaretState> = listOf()
+        var matchLength: Int = 0
     }
 
-    private data class CaretState(internal val offset: Int, internal val matchLength: Int)
+    private data class CaretState(val offset: Int, val matchLength: Int)
 
     override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
         val project = editor.project ?: return
@@ -133,7 +133,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
     }
 
     private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor) : LightweightHint(MyPanel()) {
-        private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
+        private data class HintState(val text: String, val color: Color, val title: String)
 
         private val caretListener = MyCaretListener()
         private val selectionListener = MySelectionListener()
@@ -142,7 +142,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
         private val labelTitle = newLabel(getLabelText(searchBack, isWrapped = false, notFound = false))
-        internal val labelTarget = newLabel("")
+        val labelTarget = newLabel("")
 
         init {
             labelTitle.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
