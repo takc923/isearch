@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.intellij.codeInsight.editorActions.PasteHandler
 import com.intellij.codeInsight.hint.HintManagerImpl
 import com.intellij.codeInsight.hint.HintUtil
 import com.intellij.codeInsight.template.impl.editorActions.TypedActionHandlerBase
@@ -24,7 +23,10 @@ import com.intellij.openapi.application.ex.ClipboardUtil
 import com.intellij.openapi.editor.Caret
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.ScrollType
-import com.intellij.openapi.editor.actionSystem.*
+import com.intellij.openapi.editor.actionSystem.EditorActionHandler
+import com.intellij.openapi.editor.actionSystem.EditorActionManager
+import com.intellij.openapi.editor.actionSystem.TypedAction
+import com.intellij.openapi.editor.actionSystem.TypedActionHandler
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -36,31 +38,32 @@ import com.intellij.openapi.util.Key
 import com.intellij.ui.HintHint
 import com.intellij.ui.JBColor
 import com.intellij.ui.LightweightHint
-import com.intellij.util.Producer
 import com.intellij.util.text.StringSearcher
 import com.intellij.util.ui.UIUtil
 import java.awt.BorderLayout
 import java.awt.Color
 import java.awt.Dimension
 import java.awt.Font
-import java.awt.datatransfer.Transferable
-import javax.swing.*
+import javax.swing.BorderFactory
+import javax.swing.JLabel
+import javax.swing.JPanel
+import javax.swing.SwingUtilities
 
 class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHandler() {
 
     private class PerEditorSearchData {
-        internal var hint: MyHint? = null
-        internal var lastSearch = ""
-        internal var currentSearchBack = true
+        var hint: MyHint? = null
+        var lastSearch = ""
+        var currentSearchBack = true
     }
 
     private class PerCaretSearchData {
-        internal var segmentHighlighter: RangeHighlighter? = null
-        internal var history: List<CaretState> = listOf()
-        internal var matchLength: Int = 0
+        var segmentHighlighter: RangeHighlighter? = null
+        var history: List<CaretState> = listOf()
+        var matchLength: Int = 0
     }
 
-    private data class CaretState(internal val offset: Int, internal val matchLength: Int)
+    private data class CaretState(val offset: Int, val matchLength: Int)
 
     override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
         val project = editor.project ?: return
@@ -130,7 +133,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
     }
 
     private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor) : LightweightHint(MyPanel()) {
-        private data class HintState(internal val text: String, internal val color: Color, internal val title: String)
+        private data class HintState(val text: String, val color: Color, val title: String)
 
         private val caretListener = MyCaretListener()
         private val selectionListener = MySelectionListener()
@@ -139,7 +142,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
         private val labelTitle = newLabel(getLabelText(searchBack, isWrapped = false, notFound = false))
-        internal val labelTarget = newLabel("")
+        val labelTarget = newLabel("")
 
         init {
             labelTitle.font = UIUtil.getLabelFont().deriveFont(Font.BOLD)
@@ -275,12 +278,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         }
     }
 
-    class MyPasteHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler), EditorTextInsertHandler {
-        override fun execute(editor: Editor?, dataContext: DataContext?, producer: Producer<Transferable>?) {
-            val originalPasteHandler = myOriginalHandler as? PasteHandler ?: return
-            originalPasteHandler.execute(editor, dataContext, producer)
-        }
-
+    class MyPasteHandler(myOriginalHandler: EditorActionHandler) : BaseEditorActionHandler(myOriginalHandler) {
         override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             val text = ClipboardUtil.getTextInClipboard()
@@ -308,6 +306,12 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 if (searchBack) "Backward" else null
         ).filterNotNull().joinToString(" ") + ": "
 
+
+        /**
+         * Searches [target] in [text] from [currentOffset] in the direction of [searchBack].
+         * Returns the position of the first found [target]. Returns -1 if [target] is not found.
+         * [isNext] determines if search text exactly at [currentOffset] or not.
+         */
         private fun search(currentOffset: Int, target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int {
             val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
             val diffForNext = if (isNext) 1 else 0
@@ -329,7 +333,8 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             hint.pushHistory(editor)
 
             if (charTyped != null) hint.labelTarget.text += charTyped
-            val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }.ifEmpty { return }
+            val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }
+            if (target.isEmpty()) return
             // search from current offset if using lastSearch
             val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() || hint.labelTarget.text.length == 1 && searchBack
 
