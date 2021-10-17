@@ -306,6 +306,12 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 if (searchBack) "Backward" else null
         ).filterNotNull().joinToString(" ") + ": "
 
+
+        /**
+         * Searches [target] in [text] from [currentOffset] in the direction of [searchBack].
+         * Returns the position of the first found [target]. Returns -1 if [target] is not found.
+         * [isNext] determines if search text exactly at [currentOffset] or not.
+         */
         private fun search(currentOffset: Int, target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int {
             val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
             val diffForNext = if (isNext) 1 else 0
