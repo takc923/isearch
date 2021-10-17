@@ -61,9 +61,10 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         var segmentHighlighter: RangeHighlighter? = null
         var history: List<CaretState> = listOf()
         var matchLength: Int = 0
+        var matchOffset: Int = 0
     }
 
-    private data class CaretState(val offset: Int, val matchLength: Int)
+    private data class CaretState(val offset: Int, val matchOffset: Int, val matchLength: Int)
 
     override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
         val project = editor.project ?: return
@@ -73,13 +74,15 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val typedAction = TypedAction.getInstance()
             typedAction.setupRawHandler(MyTypedHandler(typedAction.rawHandler))
 
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE, BackSpaceHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_BACKSPACE)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP, UpHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN, DownHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_ENTER, EnterHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_ENTER)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_COPY, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_COPY)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START, HandlerToHide(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_MOVE_LINE_START)))
-            actionManager.setActionHandler(IdeActions.ACTION_EDITOR_PASTE, MyPasteHandler(actionManager.getActionHandler(IdeActions.ACTION_EDITOR_PASTE)))
+            mapOf(
+                IdeActions.ACTION_EDITOR_BACKSPACE to ::BackSpaceHandler,
+                IdeActions.ACTION_EDITOR_MOVE_CARET_UP to ::UpHandler,
+                IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN to ::DownHandler,
+                IdeActions.ACTION_EDITOR_ENTER to ::EnterHandler,
+                IdeActions.ACTION_EDITOR_COPY to ::HandlerToHide,
+                IdeActions.ACTION_EDITOR_MOVE_LINE_START to ::HandlerToHide,
+                IdeActions.ACTION_EDITOR_PASTE to ::MyPasteHandler
+            ).forEach { (name, constructor) -> actionManager.setActionHandler(name, constructor(actionManager.getActionHandler(name))) }
 
             ourActionsRegistered = true
         }
@@ -175,11 +178,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             this.pack()
         }
 
-        fun pushHistory(editor: Editor) {
-            editor.caretModel.runForEachCaret {
-                val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
-                caretData.history += CaretState(it.offset, caretData.matchLength)
-            }
+        fun pushHistory() {
             this.history += HintState(this.labelTarget.text, this.labelTarget.foreground, this.labelTitle.text)
         }
 
@@ -191,7 +190,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 val caretState = caretData.history.lastOrNull() ?: return
                 caretData.history = caretData.history.dropLast(1)
-                moveCaret(caretData, this, caret, caretState.offset, editor, caretState.matchLength)
+                moveCaret(caretData, this, caret, caretState.offset, editor, caretState.matchLength, caretState.matchOffset)
             })
         }
 
@@ -300,37 +299,31 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         }
 
         private fun getLabelText(searchBack: Boolean, isWrapped: Boolean, notFound: Boolean): String = sequenceOf(
-                if (notFound) "Failing" else null,
-                if (isWrapped) "Wrapped" else null,
-                "I-search",
-                if (searchBack) "Backward" else null
+            if (notFound) "Failing" else null,
+            if (isWrapped) "Wrapped" else null,
+            "I-search",
+            if (searchBack) "Backward" else null
         ).filterNotNull().joinToString(" ") + ": "
 
-
         /**
-         * Searches [target] in [text] from [currentOffset] in the direction of [searchBack].
-         * Returns the position of the first found [target]. Returns -1 if [target] is not found.
-         * [isNext] determines if search text exactly at [currentOffset] or not.
+         * Searches [searchWord] in [text] from [caretOffset] in the direction of [forward].
+         * Returns the position of the first found [searchWord]. Returns -1 if [searchWord] is not found.
+         * [next] determines if search text exactly at [caretOffset] or not.
          */
-        private fun search(currentOffset: Int, target: String, text: CharSequence, searchBack: Boolean, isNext: Boolean): Int {
-            val searcher = StringSearcher(target, detectSmartCaseSensitive(target), !searchBack)
-            val diffForNext = if (isNext) 1 else 0
-            val (_start, _end) = when {
-                searchBack -> Pair(0, currentOffset + target.length - diffForNext)
-                else -> Pair(currentOffset + diffForNext, text.length)
+        private fun search(caretOffset: Int, searchWord: String, text: CharSequence, forward: Boolean, next: Boolean, currentMatchLength: Int): Int {
+            // todo: document
+            val from = when {
+                forward && next && caretOffset < text.length -> caretOffset - currentMatchLength + 1
+                forward && !next -> caretOffset - currentMatchLength
+                !forward && next && caretOffset > 0 -> caretOffset + currentMatchLength - 1
+                else -> caretOffset + currentMatchLength
             }
-            val max = if (searchBack) text.lastIndex else text.length
-            val start = minOf(max, maxOf(0, _start))
-            val end = minOf(max, maxOf(0, _end))
-            return searcher.scan(text, start, end)
+            return search(text, searchWord, from, forward)
         }
-
-        private fun searchWhole(target: String, text: CharSequence, searchBack: Boolean): Int =
-                search(if (searchBack) text.lastIndex else 0, target, text, searchBack, false)
 
         private fun updatePositionAndHint(editor: Editor, hint: MyHint, searchBack: Boolean, charTyped: String? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
-            hint.pushHistory(editor)
+            hint.pushHistory()
 
             if (charTyped != null) hint.labelTarget.text += charTyped
             val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }
@@ -341,34 +334,44 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hint, searchBack, isNext)) }
 
-            if (areNotCaretAndHintUpdated(editor, isNext)) return hint.popHistory(editor)
-
             val result = if (searchBack) results.first() else results.last()
             hint.update(target, result.color, result.labelText)
         }
 
-        private fun areNotCaretAndHintUpdated(editor: Editor, isNext: Boolean): Boolean = editor.caretModel.allCarets.all { caret ->
-            val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
-            caretData.history.lastOrNull() == CaretState(caret.offset, caretData.matchLength)
-        } && isNext
-
         private fun updatePosition(target: String, caret: Caret, editor: Editor, hint: MyHint, searchBack: Boolean, isNext: Boolean): SearchResult {
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
-            val tmpResult = search(caret.offset, target, editor.document.charsSequence, searchBack, isNext)
+            caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength)
+
+            val docText = editor.document.charsSequence
+            val tmpResult = search(caret.offset, target, docText, !searchBack, isNext, caretData.matchLength)
             val searchResult = when {
-                tmpResult < 0 && isNext -> searchWhole(target, editor.document.charsSequence, searchBack)
+                tmpResult < 0 && isNext -> search(docText, target, if (searchBack) docText.lastIndex else 0, !searchBack)
                 else -> tmpResult
             }
             val isNotFound = searchResult < 0
             val (matchLength, newOffset) = when {
-                isNotFound -> Pair(caretData.matchLength, caret.offset)
-                else -> Pair(target.length, searchResult)
+                isNotFound && searchBack -> caretData.matchLength to caret.offset
+                isNotFound -> caretData.matchLength to caret.offset
+                searchBack -> target.length to searchResult
+                else -> target.length to searchResult + target.length
             }
-            moveCaret(caretData, hint, caret, newOffset, editor, matchLength)
+            val highlightIndex =
+                if (searchBack) newOffset
+                else newOffset - matchLength
+
+            if (!isNotFound) moveCaret(caretData, hint, caret, newOffset, editor, matchLength, highlightIndex)
             return SearchResult(searchBack, tmpResult != searchResult, isNotFound)
         }
 
-        private fun moveCaret(caretData: PerCaretSearchData, hint: MyHint, caret: Caret, index: Int, editor: Editor, matchLength: Int) {
+        private fun moveCaret(
+            caretData: PerCaretSearchData,
+            hint: MyHint,
+            caret: Caret,
+            index: Int,
+            editor: Editor,
+            matchLength: Int,
+            matchOffset: Int
+        ) {
             caretData.segmentHighlighter?.dispose()
             caretData.segmentHighlighter = null
             hint.doWithoutHandler {
@@ -376,18 +379,33 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 editor.selectionModel.removeSelection()
                 editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
             }
-            addHighlight(editor, caretData, caret.offset, matchLength)
+
+            editor.selectionModel.removeSelection()
+            addHighlight(editor, caretData, matchOffset, matchLength)
             IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
         }
 
         private fun addHighlight(editor: Editor, caretData: PerCaretSearchData, index: Int, matchLength: Int) {
             val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
             caretData.matchLength = matchLength
+            caretData.matchOffset = index
             caretData.segmentHighlighter = editor.markupModel
-                    .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
+                .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
         }
 
         private fun detectSmartCaseSensitive(prefix: String): Boolean =
-                prefix.any { Character.isUpperCase(it) && Character.toUpperCase(it) != Character.toLowerCase(it) }
+            prefix.any { Character.isUpperCase(it) && Character.toUpperCase(it) != Character.toLowerCase(it) }
+
+        /**
+         * Searches [searchWord] in [text] from [from] in the direction of [forward].
+         * Returns the position of the first found [searchWord]. Returns -1 if [searchWord] is not found.
+         */
+        private fun search(text: CharSequence, searchWord: String, from: Int, forward: Boolean): Int {
+            val searcher = StringSearcher(searchWord, detectSmartCaseSensitive(searchWord), forward)
+            val (start, end) =
+                if (forward) from to text.length
+                else 0 to from
+            return searcher.scan(text, start, end)
+        }
     }
 }
