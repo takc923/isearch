@@ -334,35 +334,35 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() || hint.labelTarget.text.length == 1 && searchBack
 
             val results = mutableListOf<SearchResult>()
-            editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hint, searchBack, isNext)) }
+            editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hint, !searchBack, isNext)) }
 
             val result = if (searchBack) results.first() else results.last()
             hint.update(target, result.color, result.labelText)
         }
 
-        private fun updatePosition(target: String, caret: Caret, editor: Editor, hint: MyHint, searchBack: Boolean, isNext: Boolean): SearchResult {
+        private fun updatePosition(target: String, caret: Caret, editor: Editor, hint: MyHint, forward: Boolean, isNext: Boolean): SearchResult {
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
             caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength)
 
             val docText = editor.document.charsSequence
-            val tmpResult = search(caret.offset, target, docText, !searchBack, isNext, caretData.matchLength)
+            val tmpResult = search(caret.offset, target, docText, forward, isNext, caretData.matchLength)
             val searchResult = when {
-                tmpResult < 0 && isNext -> search(docText, target, if (searchBack) docText.lastIndex else 0, !searchBack)
+                tmpResult < 0 && isNext -> search(docText, target, if (forward) 0 else docText.lastIndex, forward)
                 else -> tmpResult
             }
             val isNotFound = searchResult < 0
             val (matchLength, newOffset) = when {
-                isNotFound && searchBack -> caretData.matchLength to caret.offset
+                isNotFound && forward -> caretData.matchLength to caret.offset
                 isNotFound -> caretData.matchLength to caret.offset
-                searchBack -> target.length to searchResult
-                else -> target.length to searchResult + target.length
+                forward -> target.length to searchResult + target.length
+                else -> target.length to searchResult
             }
             val highlightIndex =
-                if (searchBack) newOffset
-                else newOffset - matchLength
+                if (forward) newOffset - matchLength
+                else newOffset
 
             if (!isNotFound) moveCaret(caretData, hint, caret, newOffset, editor, matchLength, highlightIndex)
-            return SearchResult(searchBack, tmpResult != searchResult, isNotFound)
+            return SearchResult(!forward, tmpResult != searchResult, isNotFound)
         }
 
         private fun moveCaret(
