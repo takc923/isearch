@@ -311,11 +311,13 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
          * [next] determines if search text exactly at [caretOffset] or not.
          */
         private fun search(caretOffset: Int, searchWord: String, text: CharSequence, forward: Boolean, next: Boolean, currentMatchLength: Int): Int {
-            // todo: document
+            if (forward && next && caretOffset == text.length) return -1
+            if (!forward && next && caretOffset == 0) return -1
+
             val from = when {
-                forward && next && caretOffset < text.length -> caretOffset - currentMatchLength + 1
+                forward && next -> caretOffset - currentMatchLength + 1
                 forward && !next -> caretOffset - currentMatchLength
-                !forward && next && caretOffset > 0 -> caretOffset + currentMatchLength - 1
+                !forward && next -> caretOffset + currentMatchLength - 1
                 else -> caretOffset + currentMatchLength
             }
             return search(text, searchWord, from, forward)
