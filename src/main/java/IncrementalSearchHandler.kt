@@ -325,11 +325,12 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
 
         private fun updatePositionAndHint(editor: Editor, hint: MyHint, searchBack: Boolean, charTyped: String? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
+
+            hint.pushHistory()
             if (charTyped != null) hint.labelTarget.text += charTyped
             val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }
             if (target.isEmpty()) return
 
-            hint.pushHistory()
             // search from current offset if using lastSearch
             val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() || hint.labelTarget.text.length == 1 && searchBack
 
