@@ -62,9 +62,10 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         var history: List<CaretState> = listOf()
         var matchLength: Int = 0
         var matchOffset: Int = 0
+        var startOffset: Int = 0
     }
 
-    private data class CaretState(val offset: Int, val matchOffset: Int, val matchLength: Int)
+    private data class CaretState(val offset: Int, val matchOffset: Int, val matchLength: Int, val startOffset: Int)
 
     override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
         val project = editor.project ?: return
@@ -100,9 +101,21 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         val y = -hint.component.preferredSize.height
         val p = SwingUtilities.convertPoint(component, x, y, component.rootPane.layeredPane)
 
-        HintManagerImpl.getInstanceImpl().showEditorHint(hint, editor, p, HintManagerImpl.HIDE_BY_ESCAPE or HintManagerImpl.HIDE_BY_TEXT_CHANGE, 0, false, HintHint(editor, p).setAwtTooltip(false))
+        HintManagerImpl.getInstanceImpl().showEditorHint(
+            hint,
+            editor,
+            p,
+            HintManagerImpl.HIDE_BY_ESCAPE or HintManagerImpl.HIDE_BY_TEXT_CHANGE,
+            0,
+            false,
+            HintHint(editor, p).setAwtTooltip(false)
+        )
 
-        editor.caretModel.runForEachCaret { it.putUserData(SEARCH_DATA_IN_CARET_KEY, PerCaretSearchData()) }
+        editor.caretModel.runForEachCaret {
+            val caretData = PerCaretSearchData()
+            caretData.startOffset = it.offset
+            it.putUserData(SEARCH_DATA_IN_CARET_KEY, caretData)
+        }
 
         data.hint = hint
         editor.putUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY, data)
@@ -327,16 +340,64 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         private fun updatePositionAndHint(editor: Editor, hint: MyHint, searchBack: Boolean, charTyped: String? = null, lastSearchBack: Boolean? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
 
+            // todo: backspaceの1発目にhintが戻らない。
+            // todo: Consider using startOffset instead of caretOffset.
+            // todo: 123で終わってるところで、123でisearch-forwardしてからisearch-backwardするとここでfromがtext.length超えて死ぬ。
+            // todo: pushHistoryしたけどupdatePositionしない場合を考えて起きないようにする。
             hint.pushHistory()
             if (charTyped != null) hint.labelTarget.text += charTyped
             val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }
             if (target.isEmpty()) return
 
             // search from current offset if using lastSearch
-            val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() && lastSearchBack == searchBack || hint.labelTarget.text.length == 1 && searchBack
+            val isNext =
+                charTyped == null && hint.labelTarget.text.isNotEmpty() && lastSearchBack == searchBack || hint.labelTarget.text.length == 1 && searchBack
 
             val results = mutableListOf<SearchResult>()
-            editor.caretModel.runForEachCaret { results.add(updatePosition(target, it, editor, hint, !searchBack, isNext)) }
+            editor.caretModel.runForEachCaret { caret ->
+                val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
+                caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength, caretData.startOffset)
+                val oldCaretOffset = caret.offset
+
+                val newCaretState = newSearch(editor.document.charsSequence, target, caretData.startOffset, !searchBack, isNext)
+                if (newCaretState != null) {
+                    val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
+                    val newCaretOffset = if (searchBack) newCaretState.startOffset - target.length
+                    else newCaretState.startOffset
+                    val isWrapped = (oldCaretOffset < newCaretOffset && searchBack) || (newCaretOffset < oldCaretOffset && !searchBack)
+                    caretData.segmentHighlighter?.dispose()
+                    caretData.segmentHighlighter = null
+                    hint.doWithoutHandler { // カーソルが移動するとhintが消えてしまうので、それを防ぐ。
+                        caret.moveToOffset(newCaretOffset)
+                    }
+
+                    if (searchBack) {
+                        caretData.segmentHighlighter = editor.markupModel
+                            .addRangeHighlighter(
+                                newCaretState.startOffset - target.length,
+                                newCaretState.startOffset,
+                                HighlighterLayer.LAST + 1,
+                                attributes,
+                                HighlighterTargetArea.EXACT_RANGE
+                            )
+                    } else {
+                        caretData.segmentHighlighter = editor.markupModel
+                            .addRangeHighlighter(
+                                newCaretState.startOffset,
+                                newCaretState.startOffset + target.length,
+                                HighlighterLayer.LAST + 1,
+                                attributes,
+                                HighlighterTargetArea.EXACT_RANGE
+                            )
+                    }
+                    editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+                    IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
+                    caretData.startOffset = newCaretState.startOffset
+                    results.add(SearchResult(searchBack, isWrapped, false))
+                } else {
+                    results.add(SearchResult(searchBack, isWrapped = false, notFound = false))
+                }
+            }
 
             val result = if (searchBack) results.first() else results.last()
             hint.update(target, result.color, result.labelText)
@@ -344,7 +405,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
 
         private fun updatePosition(target: String, caret: Caret, editor: Editor, hint: MyHint, forward: Boolean, isNext: Boolean): SearchResult {
             val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
-            caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength)
+            caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength, 0)
 
             val docText = editor.document.charsSequence
             val tmpResult = search(caret.offset, target, docText, forward, isNext, caretData.matchLength)
@@ -357,8 +418,12 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 isNotFound && forward -> caretData.matchLength to caret.offset
                 isNotFound -> caretData.matchLength to caret.offset
                 forward -> target.length to searchResult + target.length
-                else -> target.length to searchResult
+                else -> target.length to searchResult // todo 最後に123456を検索してsearch backwardすると、ここに来て死ぬ。
             }
+            // todo 最後の操作の履歴を取ってコードをシンプルにする。
+            // todo 検索スタート位置を覚えておいて、それを使う。matchLengthで引いたりせずに。
+            // todo: 考えられる操作、結果のシーケンスの組み合わせで何が起きるか考えたい。
+            // todo: backwardの時textを逆にしてみるとか
             val highlightIndex =
                 if (forward) newOffset - matchLength
                 else newOffset
@@ -410,6 +475,65 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 if (forward) from to text.length
                 else 0 to from
             return searcher.scan(text, start, end)
+        }
+
+        /**
+         * caret, editorごとに違うので注意
+         *
+         * == caret
+         * input
+         * - startOffset (next)
+         * - lastForward
+         * - forward
+         * - text
+         * - searchWord
+         * - highlight
+         * - next
+         * output
+         * - startOffset
+         * - caretOffset
+         * - forward // 変わらない
+         * - highlight
+         * - hint
+         *
+         * Input
+         * - startOffset (next)
+         * - lastForward
+         * - forward
+         * - text
+         * - searchWord
+         * - highlight
+         * - hint
+         *
+         * Output
+         * - startOffset
+         * - caretOffset
+         * - forward // 変わらない
+         * - highlight
+         * - hint
+         */
+        data class NewCaretState(val startOffset: Int, val caretOffset: Int) // todo: hintに必要な情報
+
+        sealed interface Operation
+        class Typed(input: String) : Operation
+        class Next(forward: Boolean) : Operation
+
+        // !forward の場合バグってる。startOffset
+        fun newSearch(
+            _text: CharSequence,
+            searchWord: String,
+            startOffset: Int,
+            forward: Boolean,
+            next: Boolean
+        ): NewCaretState? {
+            val text = if (forward) _text else _text.reversed()
+            val offsetCandidate = search(text, searchWord, if (next) startOffset + 1 else startOffset, true)
+            val offset =
+                if (offsetCandidate < 0) search(text, searchWord, 0, true)
+                else offsetCandidate
+            if (offset < 0) return null
+            return if (forward) NewCaretState(offset, offset + searchWord.length)
+            else NewCaretState(text.length - offset, text.length - offset - searchWord.length)
         }
     }
 }
