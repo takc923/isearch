@@ -521,19 +521,22 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         // !forward の場合バグってる。startOffset
         fun newSearch(
             _text: CharSequence,
-            searchWord: String,
-            startOffset: Int,
+            _searchWord: String,
+            _startOffset: Int,
             forward: Boolean,
             next: Boolean
         ): NewCaretState? {
-            val text = if (forward) _text else _text.reversed()
+            val (text, searchWord, startOffset) =
+                if (forward) Triple(_text, _searchWord, _startOffset)
+                else Triple(_text.reversed(), _searchWord.reversed(), _text.length - _startOffset)
             val offsetCandidate = search(text, searchWord, if (next) startOffset + 1 else startOffset, true)
             val offset =
                 if (offsetCandidate < 0) search(text, searchWord, 0, true)
                 else offsetCandidate
             if (offset < 0) return null
-            return if (forward) NewCaretState(offset, offset + searchWord.length)
-            else NewCaretState(text.length - offset, text.length - offset - searchWord.length)
+            val caretOffset = offset + searchWord.length
+            return if (forward) NewCaretState(offset, caretOffset)
+             else NewCaretState(text.length - offset, text.length - caretOffset)
         }
     }
 }
