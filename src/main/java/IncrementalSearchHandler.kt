@@ -536,7 +536,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             if (offset < 0) return null
             val caretOffset = offset + searchWord.length
             return if (forward) NewCaretState(offset, caretOffset)
-             else NewCaretState(text.length - offset, text.length - caretOffset)
+            else NewCaretState(text.length - offset, text.length - caretOffset)
         }
     }
 }
