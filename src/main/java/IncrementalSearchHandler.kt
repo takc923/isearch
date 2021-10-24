@@ -359,23 +359,21 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength, caretData.startOffset)
                 val oldCaretOffset = caret.offset
 
-                val newCaretState = newSearch(editor.document.charsSequence, target, caretData.startOffset, !searchBack, isNext)
+                val newCaretState = newSearch(editor.document.charsSequence, target, caretData.startOffset, !searchBack, isNext, caret.offset)
                 if (newCaretState != null) {
                     val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
-                    val newCaretOffset = if (searchBack) newCaretState.startOffset - target.length
-                    else newCaretState.startOffset
-                    val isWrapped = (oldCaretOffset < newCaretOffset && searchBack) || (newCaretOffset < oldCaretOffset && !searchBack)
+                    val isWrapped =
+                        (oldCaretOffset < newCaretState.caretOffset && searchBack) || (newCaretState.caretOffset < oldCaretOffset && !searchBack)
                     caretData.segmentHighlighter?.dispose()
                     caretData.segmentHighlighter = null
-                    hint.doWithoutHandler { // カーソルが移動するとhintが消えてしまうので、それを防ぐ。
-                        caret.moveToOffset(newCaretOffset)
-                    }
+                    // Since cursor moving remove hints, avoid it.
+                    hint.doWithoutHandler { caret.moveToOffset(newCaretState.caretOffset) }
 
                     if (searchBack) {
                         caretData.segmentHighlighter = editor.markupModel
                             .addRangeHighlighter(
-                                newCaretState.startOffset - target.length,
-                                newCaretState.startOffset,
+                                newCaretState.caretOffset ,
+                                newCaretState.caretOffset + target.length,
                                 HighlighterLayer.LAST + 1,
                                 attributes,
                                 HighlighterTargetArea.EXACT_RANGE
@@ -383,8 +381,8 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                     } else {
                         caretData.segmentHighlighter = editor.markupModel
                             .addRangeHighlighter(
-                                newCaretState.startOffset,
-                                newCaretState.startOffset + target.length,
+                                newCaretState.caretOffset - target.length,
+                                newCaretState.caretOffset ,
                                 HighlighterLayer.LAST + 1,
                                 attributes,
                                 HighlighterTargetArea.EXACT_RANGE
@@ -518,25 +516,30 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         class Typed(input: String) : Operation
         class Next(forward: Boolean) : Operation
 
-        // !forward の場合バグってる。startOffset
+        data class NTuple4<T1, T2, T3, T4>(val t1: T1, val t2: T2, val t3: T3, val t4: T4)
+
         fun newSearch(
             _text: CharSequence,
             _searchWord: String,
             _startOffset: Int,
             forward: Boolean,
-            next: Boolean
+            next: Boolean,
+            _caretOffset: Int
         ): NewCaretState? {
-            val (text, searchWord, startOffset) =
-                if (forward) Triple(_text, _searchWord, _startOffset)
-                else Triple(_text.reversed(), _searchWord.reversed(), _text.length - _startOffset)
+            val (text, searchWord, startOffset, caretOffset) =
+                if (forward) NTuple4(_text, _searchWord, _startOffset, _caretOffset)
+                else NTuple4(_text.reversed(), _searchWord.reversed(), _text.length - _startOffset, _text.length - _caretOffset)
             val offsetCandidate = search(text, searchWord, if (next) startOffset + 1 else startOffset, true)
             val offset =
                 if (offsetCandidate < 0) search(text, searchWord, 0, true)
                 else offsetCandidate
             if (offset < 0) return null
-            val caretOffset = offset + searchWord.length
-            return if (forward) NewCaretState(offset, caretOffset)
-            else NewCaretState(text.length - offset, text.length - caretOffset)
+            val newStartOffset =
+                if (next) caretOffset
+                else startOffset
+            val newCaretOffset = offset + searchWord.length
+            return if (forward) NewCaretState(newStartOffset, newCaretOffset)
+            else NewCaretState(text.length - newStartOffset, text.length - newCaretOffset)
         }
     }
 }
