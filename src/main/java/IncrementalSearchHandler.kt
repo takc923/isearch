@@ -204,7 +204,12 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 val caretState = caretData.history.lastOrNull() ?: return
                 caretData.history = caretData.history.dropLast(1)
-                moveCaret(caretData, this, caret, caretState.offset, editor, caretState.matchLength, caretState.matchOffset)
+                doWithoutHandler{ caret.moveToOffset(caretState.offset) }
+                caretData.startOffset = caretState.startOffset
+
+                caretData.segmentHighlighter?.dispose()
+                caretData.segmentHighlighter = null
+                addHighlight(editor, caretData, caretState.matchOffset, caretState.matchLength)
             })
         }
 
@@ -350,16 +355,16 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             if (target.isEmpty()) return
 
             // search from current offset if using lastSearch
-            val isNext =
-                charTyped == null && hint.labelTarget.text.isNotEmpty() && lastSearchBack == searchBack || hint.labelTarget.text.length == 1 && searchBack
+            val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() && lastSearchBack == searchBack
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { caret ->
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
                 caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength, caretData.startOffset)
                 val oldCaretOffset = caret.offset
+                val startOffset = if (isNext) caret.offset else caretData.startOffset
 
-                val newCaretState = newSearch(editor.document.charsSequence, target, caretData.startOffset, !searchBack, isNext, caret.offset)
+                val newCaretState = newSearch(editor.document.charsSequence, target, startOffset, !searchBack, isNext, caret.offset)
                 if (newCaretState != null) {
                     val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
                     val isWrapped =
@@ -369,25 +374,18 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                     // Since cursor moving remove hints, avoid it.
                     hint.doWithoutHandler { caret.moveToOffset(newCaretState.caretOffset) }
 
-                    if (searchBack) {
-                        caretData.segmentHighlighter = editor.markupModel
-                            .addRangeHighlighter(
-                                newCaretState.caretOffset ,
-                                newCaretState.caretOffset + target.length,
-                                HighlighterLayer.LAST + 1,
-                                attributes,
-                                HighlighterTargetArea.EXACT_RANGE
-                            )
-                    } else {
-                        caretData.segmentHighlighter = editor.markupModel
-                            .addRangeHighlighter(
-                                newCaretState.caretOffset - target.length,
-                                newCaretState.caretOffset ,
-                                HighlighterLayer.LAST + 1,
-                                attributes,
-                                HighlighterTargetArea.EXACT_RANGE
-                            )
-                    }
+                    val highlightOffset = if (searchBack) newCaretState.caretOffset else newCaretState.caretOffset - target.length
+                    caretData.segmentHighlighter = editor.markupModel
+                        .addRangeHighlighter(
+                            highlightOffset,
+                            highlightOffset + target.length,
+                            HighlighterLayer.LAST + 1,
+                            attributes,
+                            HighlighterTargetArea.EXACT_RANGE
+                        )
+                    caretData.matchOffset = highlightOffset
+                    caretData.matchLength = target.length
+
                     editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
                     IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
                     caretData.startOffset = newCaretState.startOffset
@@ -529,7 +527,9 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val (text, searchWord, startOffset, caretOffset) =
                 if (forward) NTuple4(_text, _searchWord, _startOffset, _caretOffset)
                 else NTuple4(_text.reversed(), _searchWord.reversed(), _text.length - _startOffset, _text.length - _caretOffset)
-            val offsetCandidate = search(text, searchWord, if (next) startOffset + 1 else startOffset, true)
+            val offsetCandidate =
+                if (text.length == startOffset) -1 // In the case the caret is at the end of the text.
+                else search(text, searchWord, if (next) startOffset + 1 else startOffset, true)
             val offset =
                 if (offsetCandidate < 0) search(text, searchWord, 0, true)
                 else offsetCandidate
