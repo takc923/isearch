@@ -338,13 +338,16 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
 
             // search from current offset if using lastSearch
             val isNext = charTyped == null && hint.labelTarget.text.isNotEmpty() && lastSearchBack == searchBack
+            val directionChanged = charTyped == null && hint.labelTarget.text.isNotEmpty() && lastSearchBack != searchBack
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { caret ->
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
                 caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength, caretData.startOffset)
                 val oldCaretOffset = caret.offset
-                val startOffset = if (isNext) caret.offset else caretData.startOffset
+                val startOffset =
+                    if (isNext || directionChanged) caret.offset
+                    else caretData.startOffset
 
                 val newCaretState = newSearch(editor.document.charsSequence, target, startOffset, !searchBack, isNext, caret.offset)
                 if (newCaretState != null) {
