@@ -327,10 +327,6 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         private fun updatePositionAndHint(editor: Editor, hint: MyHint, searchBack: Boolean, charTyped: String? = null, lastSearchBack: Boolean? = null) {
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
 
-            // todo: backspaceの1発目にhintが戻らない。
-            // todo: Consider using startOffset instead of caretOffset.
-            // todo: 123で終わってるところで、123でisearch-forwardしてからisearch-backwardするとここでfromがtext.length超えて死ぬ。
-            // todo: pushHistoryしたけどupdatePositionしない場合を考えて起きないようにする。
             hint.pushHistory()
             if (charTyped != null) hint.labelTarget.text += charTyped
             val target = hint.labelTarget.text.ifEmpty { editorData.lastSearch }
@@ -404,42 +400,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             return searcher.scan(text, from, text.length)
         }
 
-        /**
-         * caret, editorごとに違うので注意
-         *
-         * == caret
-         * input
-         * - startOffset (next)
-         * - lastForward
-         * - forward
-         * - text
-         * - searchWord
-         * - highlight
-         * - next
-         * output
-         * - startOffset
-         * - caretOffset
-         * - forward // 変わらない
-         * - highlight
-         * - hint
-         *
-         * Input
-         * - startOffset (next)
-         * - lastForward
-         * - forward
-         * - text
-         * - searchWord
-         * - highlight
-         * - hint
-         *
-         * Output
-         * - startOffset
-         * - caretOffset
-         * - forward // 変わらない
-         * - highlight
-         * - hint
-         */
-        data class NewCaretState(val startOffset: Int, val caretOffset: Int) // todo: hintに必要な情報
+        data class NewCaretState(val startOffset: Int, val caretOffset: Int)
 
         data class NTuple4<T1, T2, T3, T4>(val t1: T1, val t2: T2, val t3: T3, val t4: T4)
 
