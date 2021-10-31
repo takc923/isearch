@@ -393,15 +393,12 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             prefix.any { Character.isUpperCase(it) && Character.toUpperCase(it) != Character.toLowerCase(it) }
 
         /**
-         * Searches [searchWord] in [text] from [from] in the direction of [forward].
+         * Searches [searchWord] in [text] from [from].
          * Returns the position of the first found [searchWord]. Returns -1 if [searchWord] is not found.
          */
-        private fun search(text: CharSequence, searchWord: String, from: Int, forward: Boolean): Int {
-            val searcher = StringSearcher(searchWord, detectSmartCaseSensitive(searchWord), forward)
-            val (start, end) =
-                if (forward) from to text.length
-                else 0 to from
-            return searcher.scan(text, start, end)
+        private fun search(text: CharSequence, searchWord: String, from: Int): Int {
+            val searcher = StringSearcher(searchWord, detectSmartCaseSensitive(searchWord), true)
+            return searcher.scan(text, from, text.length)
         }
 
         /**
@@ -456,9 +453,9 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 else NTuple4(_text.reversed(), _searchWord.reversed(), _text.length - _startOffset, _text.length - _caretOffset)
             val offsetCandidate =
                 if (text.length == startOffset) -1 // In the case the caret is at the end of the text.
-                else search(text, searchWord, if (next) startOffset + 1 else startOffset, true)
+                else search(text, searchWord, if (next) startOffset + 1 else startOffset)
             val offset =
-                if (offsetCandidate < 0) search(text, searchWord, 0, true)
+                if (offsetCandidate < 0) search(text, searchWord, 0)
                 else offsetCandidate
             if (offset < 0) return null
             val newStartOffset =
