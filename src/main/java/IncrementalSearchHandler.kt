@@ -59,7 +59,6 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
     }
 
     private class PerCaretSearchData {
-        var segmentHighlighter: RangeHighlighter? = null
         var history: List<CaretState> = listOf()
         var startOffset: Int = 0
     }
@@ -136,9 +135,11 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
         }
 
         override fun caretRemoved(e: CaretEvent) {
-            val caretData = e.caret?.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
-            caretData.segmentHighlighter?.dispose()
-            caretData.segmentHighlighter = null
+            val oldOffset = e.editor.logicalPositionToOffset(e.oldPosition)
+            val highlighter = e.editor.markupModel.allHighlighters.firstOrNull { highlighter ->
+                highlighter.startOffset <= oldOffset && oldOffset <= highlighter.endOffset
+            }
+            highlighter?.dispose()
         }
     }
 
@@ -208,8 +209,10 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
                 IdeDocumentHistory.getInstance(project).includeCurrentCommandAsNavigation()
                 caretData.startOffset = caretState.startOffset
 
-                caretData.segmentHighlighter?.dispose()
-                caretData.segmentHighlighter = null
+                val highlighter = editor.markupModel.allHighlighters.firstOrNull { highlighter ->
+                    highlighter.startOffset <= caret.offset && caret.offset <= highlighter.endOffset
+                }
+                highlighter?.dispose()
                 addHighlight(editor, caretData, caretState.matchOffset, caretState.matchLength)
             })
         }
@@ -218,12 +221,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
             if (!isVisible || ignoreCaretMove) return
 
             super.hide()
-            // Recursive runForEachCaret invocations are not allowed. So now using allCarets.forEach
-            editor.caretModel.allCarets.forEach {
-                val caretData = it.getUserData(SEARCH_DATA_IN_CARET_KEY)
-                caretData?.segmentHighlighter?.dispose()
-                caretData?.segmentHighlighter = null
-            }
+            editor.markupModel.removeAllHighlighters()
 
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: return
             val hint = editorData.hint ?: return
@@ -381,19 +379,17 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
                 )
 
                 if (newCaretState != null) {
-                    caretData.segmentHighlighter?.dispose()
-                    caretData.segmentHighlighter = null
                     // Since cursor moving remove hints, avoid it.
                     hint.doWithoutHandler { caret.moveToOffset(newCaretState.caretOffset) }
 
-                    caretData.segmentHighlighter = editor.markupModel
-                        .addRangeHighlighter(
-                            newCaretState.highlightOffset,
-                            newCaretState.highlightEndLength,
-                            HighlighterLayer.LAST + 1,
-                            attributes,
-                            HighlighterTargetArea.EXACT_RANGE
-                        )
+                    highlighter.dispose()
+                    editor.markupModel.addRangeHighlighter(
+                        newCaretState.highlightOffset,
+                        newCaretState.highlightEndLength,
+                        HighlighterLayer.LAST + 1,
+                        attributes,
+                        HighlighterTargetArea.EXACT_RANGE
+                    )
 
                     if (isPrimary) {
                         editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
@@ -412,8 +408,13 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
 
         private fun addHighlight(editor: Editor, caretData: PerCaretSearchData, index: Int, matchLength: Int) {
             val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
-            caretData.segmentHighlighter = editor.markupModel
-                .addRangeHighlighter(index, index + matchLength, HighlighterLayer.LAST + 1, attributes, HighlighterTargetArea.EXACT_RANGE)
+            editor.markupModel.addRangeHighlighter(
+                index,
+                index + matchLength,
+                HighlighterLayer.LAST + 1,
+                attributes,
+                HighlighterTargetArea.EXACT_RANGE
+            )
         }
 
         private fun detectSmartCaseSensitive(prefix: String): Boolean =
