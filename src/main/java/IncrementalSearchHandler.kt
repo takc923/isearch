@@ -31,7 +31,6 @@ import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
-import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.fileEditor.ex.IdeDocumentHistory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -213,7 +212,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
                     highlighter.startOffset <= caret.offset && caret.offset <= highlighter.endOffset
                 }
                 highlighter?.dispose()
-                addHighlight(editor, caretData, caretState.matchOffset, caretState.matchLength)
+                addHighlight(editor, caretState.matchOffset, caretState.matchLength)
             })
         }
 
@@ -406,7 +405,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
             hint.update(target, result.color, result.labelText)
         }
 
-        private fun addHighlight(editor: Editor, caretData: PerCaretSearchData, index: Int, matchLength: Int) {
+        private fun addHighlight(editor: Editor, index: Int, matchLength: Int) {
             val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
             editor.markupModel.addRangeHighlighter(
                 index,
