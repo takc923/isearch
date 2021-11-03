@@ -205,6 +205,8 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                 val caretState = caretData.history.lastOrNull() ?: return
                 caretData.history = caretData.history.dropLast(1)
                 doWithoutHandler { caret.moveToOffset(caretState.offset) }
+                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+                IdeDocumentHistory.getInstance(project).includeCurrentCommandAsNavigation()
                 caretData.startOffset = caretState.startOffset
 
                 caretData.segmentHighlighter?.dispose()
