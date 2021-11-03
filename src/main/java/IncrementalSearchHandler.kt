@@ -54,7 +54,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
     private class PerEditorSearchData {
         var hint: MyHint? = null
         var lastSearch = ""
-        var currentSearchBack = true
+        var currentForward = false
         var lastInput: InputEvent? = null
     }
 
@@ -90,8 +90,8 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         }
 
         val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
-        val lastSearchBack = data.currentSearchBack
-        data.currentSearchBack = searchBack
+        val lastSearchBack = !data.currentForward
+        data.currentForward = !searchBack
         val currentHint = data.hint
         if (currentHint != null) return updatePositionAndHint(editor, currentHint, !searchBack, null, !lastSearchBack)
 
@@ -249,7 +249,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             val hint = editorData?.hint
             if (hint == null) myOriginalHandler?.execute(editor, charTyped, dataContext)
-            else updatePositionAndHint(editor, hint, !editorData.currentSearchBack, charTyped.toString(), !editorData.currentSearchBack)
+            else updatePositionAndHint(editor, hint, editorData.currentForward, charTyped.toString(), editorData.currentForward)
         }
     }
 
@@ -273,7 +273,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             val hint = editorData?.hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
 
-            updatePositionAndHint(editor, hint, false, null, !editorData.currentSearchBack)
+            updatePositionAndHint(editor, hint, false, null, editorData.currentForward)
         }
     }
 
@@ -282,7 +282,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val editorData = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY)
             val hint = editorData?.hint ?: return myOriginalHandler.execute(editor, caret, dataContext)
 
-            updatePositionAndHint(editor, hint, true, null, !editorData.currentSearchBack)
+            updatePositionAndHint(editor, hint, true, null, editorData.currentForward)
         }
     }
 
@@ -307,7 +307,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val text = ClipboardUtil.getTextInClipboard()
             val hint = editorData?.hint
             if (hint == null || text == null || text.isEmpty()) myOriginalHandler.execute(editor, caret, dataContext)
-            else updatePositionAndHint(editor, hint, !editorData.currentSearchBack, text, !editorData.currentSearchBack)
+            else updatePositionAndHint(editor, hint, editorData.currentForward, text, editorData.currentForward)
         }
     }
 
