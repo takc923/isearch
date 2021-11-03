@@ -95,7 +95,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
         val currentHint = data.hint
         if (currentHint != null) return updatePositionAndHint(editor, currentHint, forward, null, lastForward)
 
-        val hint = MyHint(!forward, project, editor)
+        val hint = MyHint(forward, project, editor)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
@@ -150,7 +150,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
         }
     }
 
-    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor) : LightweightHint(MyPanel()) {
+    private class MyHint(forward: Boolean, val project: Project, private val editor: Editor) : LightweightHint(MyPanel()) {
         private data class HintState(val text: String, val color: Color, val title: String)
 
         private val caretListener = MyCaretListener()
@@ -159,7 +159,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
 
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
-        private val labelTitle = newLabel(getLabelText(searchBack, isWrapped = false, notFound = false))
+        private val labelTitle = newLabel(getLabelText(!forward, isWrapped = false, notFound = false))
         val labelTarget = newLabel("")
 
         init {
