@@ -388,13 +388,13 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
                     editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
                     IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
                     caretData.startOffset = newCaretState.startOffset
-                    results.add(SearchResult(searchBack, newCaretState.wrapped, false))
+                    results.add(SearchResult(!forward, newCaretState.wrapped, false))
                 } else {
-                    results.add(SearchResult(searchBack, isWrapped = false, notFound = false))
+                    results.add(SearchResult(!forward, isWrapped = false, notFound = false))
                 }
             }
 
-            val result = if (searchBack) results.first() else results.last()
+            val result = if (forward) results.last() else results.first()
             hint.update(target, result.color, result.labelText)
         }
 
