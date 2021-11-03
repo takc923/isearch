@@ -317,8 +317,8 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
 
         private var ourActionsRegistered = false
 
-        data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean) {
-            val labelText = getLabelText(!searchBack, isWrapped, notFound)
+        data class SearchResult(val forward: Boolean, val isWrapped: Boolean, val notFound: Boolean) {
+            val labelText = getLabelText(forward, isWrapped, notFound)
             val color: Color = if (notFound) JBColor.RED else JBColor.foreground()
         }
 
@@ -387,9 +387,9 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
                     editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
                     IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
                     caretData.startOffset = newCaretState.startOffset
-                    results.add(SearchResult(!forward, newCaretState.wrapped, false))
+                    results.add(SearchResult(forward, newCaretState.wrapped, false))
                 } else {
-                    results.add(SearchResult(!forward, isWrapped = false, notFound = false))
+                    results.add(SearchResult(forward, isWrapped = false, notFound = false))
                 }
             }
 
