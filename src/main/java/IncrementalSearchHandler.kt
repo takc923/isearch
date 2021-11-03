@@ -90,10 +90,10 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         }
 
         val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
-        val lastSearchBack = !data.currentForward
+        val lastForward = data.currentForward
         data.currentForward = !searchBack
         val currentHint = data.hint
-        if (currentHint != null) return updatePositionAndHint(editor, currentHint, !searchBack, null, !lastSearchBack)
+        if (currentHint != null) return updatePositionAndHint(editor, currentHint, !searchBack, null, lastForward)
 
         val hint = MyHint(searchBack, project, editor)
 
