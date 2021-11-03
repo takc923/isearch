@@ -159,7 +159,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
 
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
-        private val labelTitle = newLabel(getLabelText(!forward, isWrapped = false, notFound = false))
+        private val labelTitle = newLabel(getLabelText(forward, isWrapped = false, notFound = false))
         val labelTarget = newLabel("")
 
         init {
@@ -318,15 +318,15 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
         private var ourActionsRegistered = false
 
         data class SearchResult(val searchBack: Boolean, val isWrapped: Boolean, val notFound: Boolean) {
-            val labelText = getLabelText(searchBack, isWrapped, notFound)
+            val labelText = getLabelText(!searchBack, isWrapped, notFound)
             val color: Color = if (notFound) JBColor.RED else JBColor.foreground()
         }
 
-        private fun getLabelText(searchBack: Boolean, isWrapped: Boolean, notFound: Boolean): String = sequenceOf(
+        private fun getLabelText(forward: Boolean, isWrapped: Boolean, notFound: Boolean): String = sequenceOf(
             if (notFound) "Failing" else null,
             if (isWrapped) "Wrapped" else null,
             "I-search",
-            if (searchBack) "Backward" else null
+            if (!forward) "Backward" else null
         ).filterNotNull().joinToString(" ") + ": "
 
         private fun updatePositionAndHint(
