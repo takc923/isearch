@@ -49,7 +49,7 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.SwingUtilities
 
-class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHandler() {
+class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandler() {
 
     private class PerEditorSearchData {
         var hint: MyHint? = null
@@ -91,11 +91,11 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
 
         val data = editor.getUserData(SEARCH_DATA_IN_EDITOR_VIEW_KEY) ?: PerEditorSearchData()
         val lastForward = data.currentForward
-        data.currentForward = !searchBack
+        data.currentForward = forward
         val currentHint = data.hint
-        if (currentHint != null) return updatePositionAndHint(editor, currentHint, !searchBack, null, lastForward)
+        if (currentHint != null) return updatePositionAndHint(editor, currentHint, forward, null, lastForward)
 
-        val hint = MyHint(searchBack, project, editor)
+        val hint = MyHint(!forward, project, editor)
 
         val component = editor.component
         val x = SwingUtilities.convertPoint(component, 0, 0, component).x
