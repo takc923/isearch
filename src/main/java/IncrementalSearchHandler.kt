@@ -317,7 +317,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
 
         private var ourActionsRegistered = false
 
-        data class SearchResult(val forward: Boolean, val isWrapped: Boolean, val notFound: Boolean) {
+        data class SearchResult(val forward: Boolean, val isWrapped: Boolean, val notFound: Boolean, val isPrimary: Boolean) {
             val labelText = getLabelText(forward, isWrapped, notFound)
             val color: Color = if (notFound) JBColor.RED else JBColor.foreground()
         }
@@ -354,6 +354,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
 
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { caret ->
+                val isPrimary = caret == editor.caretModel.primaryCaret
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
                 caretData.history += CaretState(caret.offset, caretData.matchOffset, caretData.matchLength, caretData.startOffset)
 
@@ -384,16 +385,18 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
                     caretData.matchOffset = newCaretState.highlightOffset
                     caretData.matchLength = target.length
 
-                    editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+                    if (isPrimary) {
+                        editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+                    }
                     IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
                     caretData.startOffset = newCaretState.startOffset
-                    results.add(SearchResult(forward, newCaretState.wrapped, false))
+                    results.add(SearchResult(forward, newCaretState.wrapped, false, isPrimary))
                 } else {
-                    results.add(SearchResult(forward, isWrapped = false, notFound = false))
+                    results.add(SearchResult(forward, isWrapped = false, notFound = false, isPrimary))
                 }
             }
 
-            val result = if (forward) results.last() else results.first()
+            val result = results.firstOrNull { it.isPrimary } ?: return // should never be null
             hint.update(target, result.color, result.labelText)
         }
 
