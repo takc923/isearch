@@ -31,6 +31,7 @@ import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
+import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.fileEditor.ex.IdeDocumentHistory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -202,17 +203,20 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
             editor.caretModel.runForEachCaret(fun(caret: Caret) {
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY) ?: return
                 val caretState = caretData.history.lastOrNull() ?: return
+                val isPrimary = caret == editor.caretModel.primaryCaret
                 caretData.history = caretData.history.dropLast(1)
-                doWithoutHandler { caret.moveToOffset(caretState.offset) }
-                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
-                IdeDocumentHistory.getInstance(project).includeCurrentCommandAsNavigation()
-                caretData.startOffset = caretState.startOffset
-
                 val highlighter = editor.markupModel.allHighlighters.firstOrNull { highlighter ->
                     highlighter.startOffset <= caret.offset && caret.offset <= highlighter.endOffset
                 }
+
+                doWithoutHandler { caret.moveToOffset(caretState.offset) }
                 highlighter?.dispose()
-                addHighlight(editor, caretState.matchOffset, caretState.matchLength)
+                addRangeHighlighter(editor, caretState.matchOffset,caretState.matchOffset + caretState.matchLength)
+                if (isPrimary) {
+                    editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+                }
+                IdeDocumentHistory.getInstance(project).includeCurrentCommandAsNavigation()
+                caretData.startOffset = caretState.startOffset
             })
         }
 
@@ -346,21 +350,13 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
             }
             editorData.lastInput = input
 
-
-            val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
             val results = mutableListOf<SearchResult>()
             editor.caretModel.runForEachCaret { caret ->
                 val isPrimary = caret == editor.caretModel.primaryCaret
                 val caretData = caret.getUserData(SEARCH_DATA_IN_CARET_KEY)!!
                 val highlighter = editor.markupModel.allHighlighters.firstOrNull { highlighter ->
                     highlighter.startOffset <= caret.offset && caret.offset <= highlighter.endOffset
-                }?: editor.markupModel.addRangeHighlighter(
-                    caret.offset,
-                    caret.offset,
-                    HighlighterLayer.LAST + 1,
-                    attributes,
-                    HighlighterTargetArea.EXACT_RANGE
-                )
+                } ?: addRangeHighlighter(editor, caret.offset, caret.offset)
                 caretData.history += CaretState(
                     caret.offset,
                     highlighter.startOffset,
@@ -378,23 +374,8 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
                 )
 
                 if (newCaretState != null) {
-                    // Since cursor moving remove hints, avoid it.
-                    hint.doWithoutHandler { caret.moveToOffset(newCaretState.caretOffset) }
+                    updateCaretAndHighlight(hint, caret, newCaretState, highlighter, editor, isPrimary, caretData)
 
-                    highlighter.dispose()
-                    editor.markupModel.addRangeHighlighter(
-                        newCaretState.highlightOffset,
-                        newCaretState.highlightEndLength,
-                        HighlighterLayer.LAST + 1,
-                        attributes,
-                        HighlighterTargetArea.EXACT_RANGE
-                    )
-
-                    if (isPrimary) {
-                        editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
-                    }
-                    IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
-                    caretData.startOffset = newCaretState.startOffset
                     results.add(SearchResult(forward, newCaretState.wrapped, false, isPrimary))
                 } else {
                     results.add(SearchResult(forward, isWrapped = false, notFound = false, isPrimary))
@@ -405,16 +386,36 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
             hint.update(target, result.color, result.labelText)
         }
 
-        private fun addHighlight(editor: Editor, index: Int, matchLength: Int) {
-            val attributes = editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES)
+        private fun updateCaretAndHighlight(
+            hint: MyHint,
+            caret: Caret,
+            newCaretState: NewNewCaretState,
+            highlighter: RangeHighlighter,
+            editor: Editor,
+            isPrimary: Boolean,
+            caretData: PerCaretSearchData
+        ) {
+            // Since cursor moving remove hints, avoid it.
+            hint.doWithoutHandler { caret.moveToOffset(newCaretState.caretOffset) }
+
+            highlighter.dispose()
+            addRangeHighlighter(editor, newCaretState.highlightOffset, newCaretState.highlightEndLength)
+
+            if (isPrimary) {
+                editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
+            }
+            IdeDocumentHistory.getInstance(hint.project).includeCurrentCommandAsNavigation()
+            caretData.startOffset = newCaretState.startOffset
+        }
+
+        private fun addRangeHighlighter(editor: Editor, startOffset: Int, endOffset: Int): RangeHighlighter =
             editor.markupModel.addRangeHighlighter(
-                index,
-                index + matchLength,
+                startOffset,
+                endOffset,
                 HighlighterLayer.LAST + 1,
-                attributes,
+                editor.colorsScheme.getAttributes(EditorColors.SEARCH_RESULT_ATTRIBUTES),
                 HighlighterTargetArea.EXACT_RANGE
             )
-        }
 
         private fun detectSmartCaseSensitive(prefix: String): Boolean =
             prefix.any { Character.isUpperCase(it) && Character.toUpperCase(it) != Character.toLowerCase(it) }
