@@ -63,7 +63,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
         var startOffset: Int = 0
     }
 
-    private data class CaretState(val offset: Int, val matchOffset: Int, val matchLength: Int, val startOffset: Int)
+    private data class CaretState(val offset: Int, val matchOffset: Int, val matchEndOffset: Int, val startOffset: Int)
 
     override fun doExecute(editor: Editor, caret: Caret?, dataContext: DataContext?) {
         val project = editor.project ?: return
@@ -211,7 +211,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
 
                 doWithoutHandler { caret.moveToOffset(caretState.offset) }
                 highlighter?.dispose()
-                addRangeHighlighter(editor, caretState.matchOffset,caretState.matchOffset + caretState.matchLength)
+                addRangeHighlighter(editor, caretState.matchOffset, caretState.matchEndOffset)
                 if (isPrimary) {
                     editor.scrollingModel.scrollToCaret(ScrollType.MAKE_VISIBLE)
                 }
@@ -357,12 +357,7 @@ class IncrementalSearchHandler(private val forward: Boolean) : EditorActionHandl
                 val highlighter = editor.markupModel.allHighlighters.firstOrNull { highlighter ->
                     highlighter.startOffset <= caret.offset && caret.offset <= highlighter.endOffset
                 } ?: addRangeHighlighter(editor, caret.offset, caret.offset)
-                caretData.history += CaretState(
-                    caret.offset,
-                    highlighter.startOffset,
-                    highlighter.endOffset - highlighter.startOffset,
-                    caretData.startOffset
-                )
+                caretData.history += CaretState(caret.offset, highlighter.startOffset, highlighter.endOffset, caretData.startOffset)
 
                 val newCaretState = newNewSearch(
                     editor.document.charsSequence,
