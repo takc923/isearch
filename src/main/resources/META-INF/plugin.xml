@@ -14,6 +14,10 @@
     ]]></description>
 
     <change-notes><![CDATA[
+      <p>v0.12</p>
+      <ul>
+        <li>Update dependencies</li>
+      </ul>
       <p>v0.11</p>
       <ul>
         <li>Update dependencies for 2020.1</li>
