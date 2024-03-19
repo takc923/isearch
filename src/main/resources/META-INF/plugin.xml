@@ -58,7 +58,7 @@
          on how to target different products -->
     <depends>com.intellij.modules.lang</depends>
 
-    <idea-version since-build="193.1784" />
+    <idea-version since-build="193.5233.102" />
 
     <actions>
         <action id="ISearchBackward" class="ISearchBackwardAction" text="isearch-backward">
