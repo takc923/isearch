@@ -27,7 +27,7 @@ repositories {
 }
 
 intellij {
-    version = '2021.2'
+    version = '2023.3.5'
     updateSinceUntilBuild = false
     pluginName = 'isearch'
 }
