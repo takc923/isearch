@@ -1,3 +1,4 @@
+package io.github.takc923
 /*
  * Copyright 2000-2017 JetBrains s.r.o.
  *
@@ -132,7 +133,8 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         }
     }
 
-    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor) : LightweightHint(MyPanel()) {
+    private class MyHint(searchBack: Boolean, val project: Project, private val editor: Editor) :
+        LightweightHint(MyPanel()) {
         private data class HintState(val text: String, val color: Color, val title: String)
 
         private val caretListener = MyCaretListener()
