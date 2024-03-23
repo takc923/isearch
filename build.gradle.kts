@@ -13,7 +13,6 @@ repositories {
 
 intellij {
     version.set("2023.3.5")
-    updateSinceUntilBuild.set(false)
     pluginName.set("isearch")
 }
 
@@ -24,5 +23,9 @@ tasks {
     }
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions.jvmTarget = "17"
+    }
+
+    patchPluginXml {
+        sinceBuild.set("193.5233.102")
     }
 }

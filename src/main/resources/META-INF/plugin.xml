@@ -62,8 +62,6 @@
          on how to target different products -->
     <depends>com.intellij.modules.lang</depends>
 
-    <idea-version since-build="193.5233.102" />
-
     <actions>
         <action id="ISearchBackward" class="io.github.takc923.ISearchBackwardAction" text="isearch-backward">
             <keyboard-shortcut first-keystroke="meta R" keymap="$default"/>
