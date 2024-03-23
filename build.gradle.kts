@@ -26,7 +26,7 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("193.5233.102")
+        sinceBuild.set("231")
         changeNotes = """
 <p>v0.12</p>
 <ul>
