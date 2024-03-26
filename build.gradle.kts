@@ -27,6 +27,18 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("231")
+        pluginDescription.set(
+            """
+<p>isearch plugin.</p>
+<p>This plugin adds isearch-forward and isearch-backward action which are like Emacs.</p>
+<p>Default keymap(Mac)</p>
+<ul>
+  <li>isearch-forward:  Control-S</li>
+  <li>isearch-backward: Control-R</li>
+</ul>
+""".trimIndent()
+        )
+
         changeNotes = """
 <p>v0.12</p>
 <ul>
