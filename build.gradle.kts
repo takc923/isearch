@@ -13,6 +13,7 @@ repositories {
 
 intellij {
     version.set("2023.3.5")
+    updateSinceUntilBuild.set(false)
     pluginName.set("isearch")
 }
 
