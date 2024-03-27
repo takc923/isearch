@@ -3,16 +3,6 @@
     <name>isearch</name>
     <vendor url="https://github.com/takc923/isearch">takc923</vendor>
 
-    <description><![CDATA[
-    <p>isearch plugin.</p>
-    <p>This plugin adds isearch-forward and isearch-backward action which are like Emacs.</p>
-    <p>Default keymap(Mac)</p>
-    <ul>
-      <li>isearch-forward:  Control-S</li>
-      <li>isearch-backward: Control-R</li>
-    </ul>
-    ]]></description>
-
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
     <depends>com.intellij.modules.lang</depends>
