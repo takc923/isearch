@@ -1,7 +1,10 @@
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.9.22"
-    id("org.jetbrains.intellij") version "1.17.2"
+    kotlin("jvm") version "2.1.10"
+    id("org.jetbrains.intellij.platform") version "2.10.4"
 }
 
 group = "io.github.takc923"
@@ -9,27 +12,39 @@ version = "0.13-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
-intellij {
-    version.set("2023.3.5")
-    updateSinceUntilBuild.set(false)
-    pluginName.set("isearch")
+dependencies {
+    intellijPlatform {
+        intellijIdeaCommunity("2025.2.1")
+    }
 }
 
-tasks {
-    withType<JavaCompile> {
-        sourceCompatibility = "17"
-        targetCompatibility = "17"
+kotlin {
+    jvmToolchain(21)
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_21)
     }
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
-    }
+}
 
-    patchPluginXml {
-        sinceBuild.set("231")
-        pluginDescription.set(
-            """
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+intellijPlatform {
+    pluginConfiguration {
+        id = "io.github.takc923.isearch"
+        name = "isearch"
+        version = project.version.toString()
+        ideaVersion {
+            sinceBuild = "252"
+        }
+        description = """
 <p>isearch plugin.</p>
 <p>This plugin adds isearch-forward and isearch-backward action which are like Emacs.</p>
 <p>Default keymap(Mac)</p>
@@ -38,8 +53,6 @@ tasks {
   <li>isearch-backward: Control-R</li>
 </ul>
 """.trimIndent()
-        )
-
         changeNotes = """
 <p>v0.12</p>
 <ul>
@@ -83,6 +96,6 @@ tasks {
 <ul>
   <li>Support multiple carets</li>
 </ul>
-"""
+""".trimIndent()
     }
 }
