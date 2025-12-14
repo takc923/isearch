@@ -33,6 +33,7 @@ import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
+import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.fileEditor.ex.IdeDocumentHistory
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Key
@@ -155,6 +156,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             component.border = BorderFactory.createLineBorder(JBColor.black)
             editor.caretModel.addCaretListener(caretListener)
             editor.selectionModel.addSelectionListener(selectionListener)
+            EditorUtil.disposeWithEditor(editor, documentListenerDisposable)
             editor.document.addDocumentListener(documentListener, documentListenerDisposable)
         }
 
