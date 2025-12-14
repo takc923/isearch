@@ -98,4 +98,10 @@ intellijPlatform {
 </ul>
 """.trimIndent()
     }
+
+    pluginVerification {
+        ides {
+            recommended()
+        }
+    }
 }
