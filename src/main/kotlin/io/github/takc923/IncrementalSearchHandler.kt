@@ -36,6 +36,7 @@ import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.fileEditor.ex.IdeDocumentHistory
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.CheckedDisposable
 import com.intellij.openapi.util.Key
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.HintHint
@@ -142,7 +143,8 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         private val caretListener = MyCaretListener()
         private val selectionListener = MySelectionListener()
         private val documentListener = MyDocumentListener(editor)
-        private val documentListenerDisposable = Disposer.newDisposable("isearch-hint-document-listener")
+        private val documentListenerDisposable: CheckedDisposable =
+            Disposer.newCheckedDisposable("isearch-hint-document-listener")
 
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
@@ -154,9 +156,9 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             component.add(labelTitle, BorderLayout.WEST)
             component.add(labelTarget, BorderLayout.CENTER)
             component.border = BorderFactory.createLineBorder(JBColor.black)
-            editor.caretModel.addCaretListener(caretListener)
-            editor.selectionModel.addSelectionListener(selectionListener)
             EditorUtil.disposeWithEditor(editor, documentListenerDisposable)
+            editor.caretModel.addCaretListener(caretListener, documentListenerDisposable)
+            editor.selectionModel.addSelectionListener(selectionListener, documentListenerDisposable)
             editor.document.addDocumentListener(documentListener, documentListenerDisposable)
         }
 
@@ -216,9 +218,9 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val hint = editorData.hint ?: return
             editorData.lastSearch = hint.labelTarget.text
             editorData.hint = null
-            Disposer.dispose(documentListenerDisposable)
-            editor.caretModel.removeCaretListener(caretListener)
-            editor.selectionModel.removeSelectionListener(selectionListener)
+            if (!documentListenerDisposable.isDisposed) {
+                Disposer.dispose(documentListenerDisposable)
+            }
         }
     }
 
