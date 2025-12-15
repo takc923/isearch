@@ -1,6 +1,7 @@
 # Created by .ignore support plugin (hsz.mobi)
 ### Gradle template
 .gradle
+.kotlin
 /build/
 
 # Ignore Gradle GUI config
