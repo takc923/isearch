@@ -143,8 +143,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         private val caretListener = MyCaretListener()
         private val selectionListener = MySelectionListener()
         private val documentListener = MyDocumentListener(editor)
-        private val hintListenerDisposable: CheckedDisposable =
-            Disposer.newCheckedDisposable("isearch-hint-document-listener")
+        private val hintListenerDisposable = Disposer.newCheckedDisposable("isearch-hint-document-listener")
 
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
