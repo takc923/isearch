@@ -143,7 +143,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         private val caretListener = MyCaretListener()
         private val selectionListener = MySelectionListener()
         private val documentListener = MyDocumentListener(editor)
-        private val documentListenerDisposable: CheckedDisposable =
+        private val hintListenerDisposable: CheckedDisposable =
             Disposer.newCheckedDisposable("isearch-hint-document-listener")
 
         private var ignoreCaretMove = false
@@ -156,10 +156,10 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             component.add(labelTitle, BorderLayout.WEST)
             component.add(labelTarget, BorderLayout.CENTER)
             component.border = BorderFactory.createLineBorder(JBColor.black)
-            EditorUtil.disposeWithEditor(editor, documentListenerDisposable)
-            editor.caretModel.addCaretListener(caretListener, documentListenerDisposable)
-            editor.selectionModel.addSelectionListener(selectionListener, documentListenerDisposable)
-            editor.document.addDocumentListener(documentListener, documentListenerDisposable)
+            EditorUtil.disposeWithEditor(editor, hintListenerDisposable)
+            editor.caretModel.addCaretListener(caretListener, hintListenerDisposable)
+            editor.selectionModel.addSelectionListener(selectionListener, hintListenerDisposable)
+            editor.document.addDocumentListener(documentListener, hintListenerDisposable)
         }
 
         private fun newLabel(text: String): JLabel {
@@ -218,8 +218,8 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val hint = editorData.hint ?: return
             editorData.lastSearch = hint.labelTarget.text
             editorData.hint = null
-            if (!documentListenerDisposable.isDisposed) {
-                Disposer.dispose(documentListenerDisposable)
+            if (!hintListenerDisposable.isDisposed) {
+                Disposer.dispose(hintListenerDisposable)
             }
         }
     }
