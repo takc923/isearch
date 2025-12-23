@@ -33,9 +33,12 @@ import com.intellij.openapi.editor.event.*
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
+import com.intellij.openapi.editor.ex.util.EditorUtil
 import com.intellij.openapi.fileEditor.ex.IdeDocumentHistory
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.CheckedDisposable
 import com.intellij.openapi.util.Key
+import com.intellij.openapi.util.Disposer
 import com.intellij.ui.HintHint
 import com.intellij.ui.JBColor
 import com.intellij.ui.LightweightHint
@@ -140,6 +143,7 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
         private val caretListener = MyCaretListener()
         private val selectionListener = MySelectionListener()
         private val documentListener = MyDocumentListener(editor)
+        private val hintListenerDisposable = Disposer.newCheckedDisposable("isearch-hint-document-listener")
 
         private var ignoreCaretMove = false
         private var history: List<HintState> = listOf()
@@ -151,9 +155,10 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             component.add(labelTitle, BorderLayout.WEST)
             component.add(labelTarget, BorderLayout.CENTER)
             component.border = BorderFactory.createLineBorder(JBColor.black)
-            editor.caretModel.addCaretListener(caretListener)
-            editor.selectionModel.addSelectionListener(selectionListener)
-            editor.document.addDocumentListener(documentListener)
+            EditorUtil.disposeWithEditor(editor, hintListenerDisposable)
+            editor.caretModel.addCaretListener(caretListener, hintListenerDisposable)
+            editor.selectionModel.addSelectionListener(selectionListener, hintListenerDisposable)
+            editor.document.addDocumentListener(documentListener, hintListenerDisposable)
         }
 
         private fun newLabel(text: String): JLabel {
@@ -212,9 +217,9 @@ class IncrementalSearchHandler(private val searchBack: Boolean) : EditorActionHa
             val hint = editorData.hint ?: return
             editorData.lastSearch = hint.labelTarget.text
             editorData.hint = null
-            editor.document.removeDocumentListener(documentListener)
-            editor.caretModel.removeCaretListener(caretListener)
-            editor.selectionModel.removeSelectionListener(selectionListener)
+            if (!hintListenerDisposable.isDisposed) {
+                Disposer.dispose(hintListenerDisposable)
+            }
         }
     }
 
